@@ -4,7 +4,18 @@
  * The eagle itself lives outside the Canvas as a screen-locked overlay
  * (see EagleOverlay.tsx), Subway-Surfer style, while this camera flies a
  * rail through the mountains beneath/around it.
- * Colors updated to a warm golden desert sunset palette.
+ * Colors: warm golden desert sunset palette — locked, do not change.
+ *
+ * Peak labels: only the nearest peak's label is ever shown, anchored right
+ * above that mountain's summit, and it plays a reveal/dismiss animation as
+ * the eagle approaches/leaves — a "one at a time" landmark reveal rather
+ * than a persistent map or a side list.
+ *
+ * v3: checkpoint card pulled down close to the summit (was floating 2.7
+ * units above it, well outside where the camera is actually looking) and
+ * restyled for contrast — solid dark panel, stronger border/glow, bigger
+ * text — so it reads clearly against the bright sunset sky instead of
+ * blending into it.
  */
 
 import { useMemo, useRef } from 'react';
@@ -85,14 +96,16 @@ function ChaseCamera({
     JOURNEY_CURVE.getPointAt(uAhead, tmpLookAhead);
 
     const targetX = tmpPos.x;
-    const targetY = tmpPos.y + 2.6;
-    const targetZ = tmpPos.z - 6.5;
+    const targetY = tmpPos.y + 4.4;
+    const targetZ = tmpPos.z - 8.5;
 
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.08);
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.08);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.08);
 
-    camera.lookAt(tmpLookAhead.x, tmpLookAhead.y + 0.4, tmpLookAhead.z);
+    // Look further ahead and above the path itself — keeps a visible
+    // horizon/sky band in frame instead of the camera pointing down at the ground.
+    camera.lookAt(tmpLookAhead.x, tmpLookAhead.y + 2.6, tmpLookAhead.z + 6);
 
     const activeId = getActivePeakId(u);
     if (activeId !== lastActiveId.current) {
@@ -115,8 +128,8 @@ function createMountainGeometry(
   seed: number,
   palette: { base: string; mid: string; high: string }
 ): THREE.BufferGeometry {
-  const radialSegments = 7;
-  const heightSegments = 5;
+  const radialSegments = 10;
+  const heightSegments = 7;
   const geometry = new THREE.ConeGeometry(radius, height, radialSegments, heightSegments, false);
   const position = geometry.attributes.position;
   const colors: number[] = [];
@@ -133,7 +146,7 @@ function createMountainGeometry(
 
     const distFromAxis = Math.sqrt(x * x + z * z);
     if (distFromAxis > 0.05) {
-      const jitter = 1 + (rng() - 0.5) * 0.3;
+      const jitter = 1 + (rng() - 0.5) * 0.2;
       position.setX(i, x * jitter);
       position.setZ(i, z * jitter);
     }
@@ -152,12 +165,12 @@ function createMountainGeometry(
   return geometry;
 }
 
-// Warm Golden Desert Palette
-const FOREGROUND_PALETTE = { base: '#2a0902', mid: '#8b3a1a', high: '#e27b38' };
-const RIDGE_PALETTE = { base: '#3a1206', mid: '#b24c23', high: '#f6a23a' };
+// Warm Golden Desert Palette — locked, do not change.
+const FOREGROUND_PALETTE = { base: '#6b2811', mid: '#a8501f', high: '#ffb066' };
+const RIDGE_PALETTE = { base: '#5c2a14', mid: '#c16a2c', high: '#ffcf8a' };
 
-const MOUNTAIN_RADIUS = 3.2;
-const MOUNTAIN_HEIGHT = 7.2;
+const MOUNTAIN_RADIUS = 4.4;
+const MOUNTAIN_HEIGHT = 4.8;
 // Must clear MOUNTAIN_RADIUS + trail radius with margin, or the base pokes into the path.
 const MOUNTAIN_OFFSET = 6.4;
 
@@ -200,15 +213,6 @@ function Mountains({ onPeakClick }: { onPeakClick: (id: string) => void }) {
               }}
             >
               <meshStandardMaterial vertexColors roughness={0.9} flatShading />
-            </mesh>
-
-            <mesh position={[0, MOUNTAIN_HEIGHT + 0.2, 0]}>
-              <sphereGeometry args={[0.22, 12, 12]} />
-              <meshStandardMaterial
-                color="#fff3dd"
-                emissive="#ffd27a"
-                emissiveIntensity={1.5}
-              />
             </mesh>
           </SwayingMountain>
         );
@@ -348,25 +352,114 @@ function Trail() {
 }
 
 /* ─────────────────────────────────────────────
-   Active peak label — only the nearest peak
-   renders, anchored near its mountain apex.
+   Checkpoint cards — anchored directly above each
+   mountain's own summit (not beside the path), so
+   the card visually belongs to that specific peak.
+   Pulled in close (1.3 units above the summit, was
+   2.7) so it sits right where the camera is actually
+   looking instead of floating up near the sky.
 ───────────────────────────────────────────── */
 
-function ActivePeakLabel({ activePeakId }: { activePeakId: string | null }) {
-  const node = PATH_NODES.find((n) => n.id === activePeakId);
-  const peak = PEAKS.find((p) => p.id === activePeakId);
+const SUMMIT_TOP = MOUNTAIN_HEIGHT + 0.3;
+const CARD_Y = MOUNTAIN_HEIGHT + 1.3;
 
-  if (!node || !peak) return null;
-
-  const sideSign = Math.sign(node.x) || 1;
-  const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
+function Signposts({
+  onPeakClick,
+  activePeakId,
+}: {
+  onPeakClick: (id: string) => void;
+  activePeakId: string | null;
+}) {
+  const peakNodes = useMemo(
+    () => PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end'),
+    []
+  );
 
   return (
-    <Html position={[apexX, MOUNTAIN_HEIGHT + 1.4, node.z]} center distanceFactor={9} occlude={false}>
-      <div className="pointer-events-none select-none whitespace-nowrap rounded-full border border-[rgba(255,210,122,0.4)] bg-[rgba(26,8,2,0.85)] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#ffd27a] shadow-[0_4px_16px_rgba(255,140,42,0.3)] backdrop-blur-md">
-        {peak.label}
-      </div>
-    </Html>
+    <>
+      {peakNodes.map((node, index) => {
+        const peak = PEAKS.find((p) => p.id === node.id);
+        if (!peak) return null;
+
+        const sideSign = Math.sign(node.x) || 1;
+        // Same position as the mountain's own apex in Mountains — the
+        // card sits directly above the peak it belongs to.
+        const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
+        const isActive = activePeakId === node.id;
+
+        return (
+          <group key={node.id} position={[apexX, 0, node.z]}>
+            <Html
+              position={[0, isActive ? CARD_Y : SUMMIT_TOP, 0]}
+              center
+              distanceFactor={isActive ? 5 : 9}
+              occlude={false}
+            >
+              {isActive ? (
+              <button
+  type="button"
+  onClick={() => onPeakClick(node.id)}
+  className="checkpoint-pop pointer-events-auto group relative flex min-w-[520px] max-w-[620px] flex-col items-center overflow-hidden rounded-[2rem] border-2 border-[#ffd27a] px-10 py-8 text-center transition duration-300 hover:-translate-y-1 hover:border-[#fff3dd]"
+  style={{
+    background:
+      'linear-gradient(180deg, rgba(39,12,3,0.98) 0%, rgba(26,9,2,0.97) 58%, rgba(58,18,6,0.98) 100%)',
+    boxShadow:
+      '0 0 0 1px rgba(255,210,122,0.26), 0 20px 54px rgba(0,0,0,0.66), 0 0 54px rgba(255,140,42,0.48)',
+  }}
+>
+  {/* ── Soft Inner Glow ───────────────────── */}
+  <span
+    className="pointer-events-none absolute inset-0 opacity-90"
+    style={{
+      background:
+        'radial-gradient(circle at 50% 0%, rgba(255,210,122,0.24), transparent 44%)',
+    }}
+  />
+
+  {/* ── Top Checkpoint Badge ───────────────── */}
+  <span className="relative mb-5 inline-flex items-center gap-2 rounded-full border border-[#ffd27a]/45 bg-[#ffd27a]/12 px-5 py-2 text-sm font-extrabold uppercase tracking-[0.24em] text-[#ffd27a]">
+    <span className="h-2 w-2 rounded-full bg-[#ffd27a] shadow-[0_0_12px_#ffd27a]" />
+    Checkpoint {String(index + 1).padStart(2, '0')} / {String(peakNodes.length).padStart(2, '0')}
+  </span>
+
+  {/* ── Main Portfolio Stop Title ──────────── */}
+  <span className="relative font-display text-[2.65rem] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#fff8ee] drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]">
+    {peak.label}
+  </span>
+
+  {/* ── Subtitle / Developer Category ──────── */}
+  <span className="relative mt-3 text-[1.05rem] font-extrabold uppercase tracking-[0.2em] text-[#ffd27a]">
+    {peak.subtitle}
+  </span>
+
+  {/* ── Small Developer Signal Line ────────── */}
+  <span className="relative mt-5 max-w-[460px] text-base font-medium leading-7 text-[#f6d4a0]">
+    Open this checkpoint to explore the work, skills, and engineering story behind it.
+  </span>
+
+  {/* ── CTA Line ───────────────────────────── */}
+  <span className="relative mt-6 inline-flex items-center gap-3 rounded-full bg-[#ffd27a] px-6 py-3 text-sm font-extrabold uppercase tracking-[0.16em] text-[#2a0902] transition duration-300 group-hover:scale-105 group-hover:bg-[#fff3dd]">
+    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#2a0902]" />
+    Tap to explore
+    <span className="text-lg leading-none transition duration-300 group-hover:translate-x-1">→</span>
+  </span>
+
+  {/* ── Bottom Glow Line ───────────────────── */}
+  <span className="pointer-events-none absolute bottom-0 left-1/2 h-[3px] w-2/3 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#ffd27a] to-transparent opacity-80" />
+</button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onPeakClick(node.id)}
+                  className="pointer-events-auto h-3 w-3 rounded-full border border-[rgba(255,210,122,0.5)] bg-[rgba(255,210,122,0.35)]"
+                  aria-label={peak.label}
+                />
+              )}
+            </Html>
+          </group>
+        );
+      })}
+    </>
   );
 }
 
@@ -386,7 +479,8 @@ export function Scene3D({ onPeakClick, activePeakId, onActivePeakChange }: Scene
         <color attach="background" args={['#2a0d04']} />
         <fog attach="fog" args={['#4c1a05', 14, 85]} />
 
-        <hemisphereLight args={['#ffd27a', '#1a0802', 0.6]} />
+        <hemisphereLight args={['#ffd27a', '#5c2410', 0.8]} />
+        <ambientLight color="#ffb066" intensity={0.25} />
         <directionalLight position={[6, 10, -4]} intensity={1.2} color="#ff8a2a" />
 
         <ChaseCamera progressRef={progressRef} onActivePeakChange={onActivePeakChange} />
@@ -394,7 +488,7 @@ export function Scene3D({ onPeakClick, activePeakId, onActivePeakChange }: Scene
         <DistantRidges />
         <Trail />
         <Mountains onPeakClick={onPeakClick} />
-        <ActivePeakLabel activePeakId={activePeakId} />
+        <Signposts onPeakClick={onPeakClick} activePeakId={activePeakId} />
       </Canvas>
     </div>
   );
