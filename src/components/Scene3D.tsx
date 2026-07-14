@@ -11,11 +11,12 @@
  * the eagle approaches/leaves — a "one at a time" landmark reveal rather
  * than a persistent map or a side list.
  *
- * v3: checkpoint card pulled down close to the summit (was floating 2.7
- * units above it, well outside where the camera is actually looking) and
- * restyled for contrast — solid dark panel, stronger border/glow, bigger
- * text — so it reads clearly against the bright sunset sky instead of
- * blending into it.
+ * v5: added the vertical progress-dot trail on the right edge (reference
+ * screenshot had it, this file didn't — it previously only existed in the
+ * old 2D JourneySections component, which is no longer mounted). It's a
+ * plain DOM overlay, sibling to the Canvas, driven by the same
+ * activePeakId this file already computes — no separate/driftable copy of
+ * peak-tracking logic.
  */
 
 import { useMemo, useRef } from 'react';
@@ -353,15 +354,16 @@ function Trail() {
 
 /* ─────────────────────────────────────────────
    Checkpoint cards — anchored directly above each
-   mountain's own summit (not beside the path), so
-   the card visually belongs to that specific peak.
-   Pulled in close (1.3 units above the summit, was
-   2.7) so it sits right where the camera is actually
-   looking instead of floating up near the sky.
+   mountain's own summit (not beside the path, not
+   docked to the screen edge), so the card visually
+   belongs to that specific peak. A thin glowing
+   connector beam + dot ties the card down to the
+   summit when active, matching the "pinned to its
+   mountain" look rather than floating loose.
 ───────────────────────────────────────────── */
 
 const SUMMIT_TOP = MOUNTAIN_HEIGHT + 0.3;
-const CARD_Y = MOUNTAIN_HEIGHT + 1.3;
+const CARD_Y = MOUNTAIN_HEIGHT + 1.5;
 
 function Signposts({
   onPeakClick,
@@ -389,64 +391,64 @@ function Signposts({
 
         return (
           <group key={node.id} position={[apexX, 0, node.z]}>
+            {/* Connector beam + dot — ties the card down to the summit */}
+            {isActive && (
+              <>
+                <mesh position={[0, (SUMMIT_TOP + CARD_Y) / 2 - 0.35, 0]}>
+                  <cylinderGeometry args={[0.035, 0.01, CARD_Y - SUMMIT_TOP - 0.55, 8, 1, true]} />
+                  <meshBasicMaterial
+                    color="#ffd27a"
+                    transparent
+                    opacity={0.55}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+                <mesh position={[0, SUMMIT_TOP + 0.56, 0]}>
+                  <sphereGeometry args={[0.091, 32, 18]} />
+                  <meshBasicMaterial color="#ffd27a" transparent opacity={0.95} />
+                </mesh>
+              </>
+            )}
+
             <Html
               position={[0, isActive ? CARD_Y : SUMMIT_TOP, 0]}
               center
-              distanceFactor={isActive ? 5 : 9}
+              distanceFactor={isActive ? 4.2 : 9}
               occlude={false}
             >
               {isActive ? (
-              <button
-  type="button"
-  onClick={() => onPeakClick(node.id)}
-  className="checkpoint-pop pointer-events-auto group relative flex min-w-[520px] max-w-[620px] flex-col items-center overflow-hidden rounded-[2rem] border-2 border-[#ffd27a] px-10 py-8 text-center transition duration-300 hover:-translate-y-1 hover:border-[#fff3dd]"
-  style={{
-    background:
-      'linear-gradient(180deg, rgba(39,12,3,0.98) 0%, rgba(26,9,2,0.97) 58%, rgba(58,18,6,0.98) 100%)',
-    boxShadow:
-      '0 0 0 1px rgba(255,210,122,0.26), 0 20px 54px rgba(0,0,0,0.66), 0 0 54px rgba(255,140,42,0.48)',
-  }}
->
-  {/* ── Soft Inner Glow ───────────────────── */}
-  <span
-    className="pointer-events-none absolute inset-0 opacity-90"
-    style={{
-      background:
-        'radial-gradient(circle at 50% 0%, rgba(255,210,122,0.24), transparent 44%)',
-    }}
-  />
+                <button
+                  type="button"
+                  onClick={() => onPeakClick(node.id)}
+                  className="checkpoint-pop pointer-events-auto flex min-w-[620px] max-w-[720px] flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
+                  style={{
+                    background: '#1a0902',
+                    boxShadow:
+                      '0 0 0 1px rgba(255,210,122,0.32), 0 20px 56px rgba(0,0,0,0.72), 0 0 58px rgba(255,140,42,0.56)',
+                  }}
+                >
+                  <span className="text-sm font-extrabold uppercase tracking-[0.28em] text-[#ffd27a]">
+                    Checkpoint {String(index + 1).padStart(2, '0')} /{' '}
+                    {String(peakNodes.length).padStart(2, '0')}
+                  </span>
 
-  {/* ── Top Checkpoint Badge ───────────────── */}
-  <span className="relative mb-5 inline-flex items-center gap-2 rounded-full border border-[#ffd27a]/45 bg-[#ffd27a]/12 px-5 py-2 text-sm font-extrabold uppercase tracking-[0.24em] text-[#ffd27a]">
-    <span className="h-2 w-2 rounded-full bg-[#ffd27a] shadow-[0_0_12px_#ffd27a]" />
-    Checkpoint {String(index + 1).padStart(2, '0')} / {String(peakNodes.length).padStart(2, '0')}
-  </span>
+                  <span className="font-display text-[4rem] font-extrabold leading-[0.95] tracking-[-0.04em] text-[#fff8ee] drop-shadow-[0_5px_18px_rgba(0,0,0,0.7)]">
+                    {peak.label}
+                  </span>
 
-  {/* ── Main Portfolio Stop Title ──────────── */}
-  <span className="relative font-display text-[2.65rem] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#fff8ee] drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]">
-    {peak.label}
-  </span>
+                  <span className="text-xl font-extrabold uppercase tracking-[0.22em] text-[#ffd27a]">
+                    {peak.subtitle}
+                  </span>
 
-  {/* ── Subtitle / Developer Category ──────── */}
-  <span className="relative mt-3 text-[1.05rem] font-extrabold uppercase tracking-[0.2em] text-[#ffd27a]">
-    {peak.subtitle}
-  </span>
 
-  {/* ── Small Developer Signal Line ────────── */}
-  <span className="relative mt-5 max-w-[460px] text-base font-medium leading-7 text-[#f6d4a0]">
-    Open this checkpoint to explore the work, skills, and engineering story behind it.
-  </span>
-
-  {/* ── CTA Line ───────────────────────────── */}
-  <span className="relative mt-6 inline-flex items-center gap-3 rounded-full bg-[#ffd27a] px-6 py-3 text-sm font-extrabold uppercase tracking-[0.16em] text-[#2a0902] transition duration-300 group-hover:scale-105 group-hover:bg-[#fff3dd]">
-    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#2a0902]" />
-    Tap to explore
-    <span className="text-lg leading-none transition duration-300 group-hover:translate-x-1">→</span>
-  </span>
-
-  {/* ── Bottom Glow Line ───────────────────── */}
-  <span className="pointer-events-none absolute bottom-0 left-1/2 h-[3px] w-2/3 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#ffd27a] to-transparent opacity-80" />
-</button>
+                  <span className="mt-4 flex items-center gap-3 rounded-full bg-[#ffd27a] px-8 py-4 text-base font-extrabold uppercase tracking-[0.16em] text-[#2a0902] shadow-[0_0_20px_rgba(255,210,122,0.35)]">
+                    <span className="h-3 w-3 animate-pulse rounded-full bg-[#2a0902]" />
+                    Tap to explore
+                    <span className="text-xl leading-none">→</span>
+                  </span>
+                </button>
               ) : (
                 <button
                   type="button"
@@ -460,6 +462,63 @@ function Signposts({
         );
       })}
     </>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Progress trail — plain DOM overlay (not R3F),
+   fixed to the right edge. One dot per peak, in
+   journey order. Filled = passed, glowing = active,
+   dim = upcoming. Driven entirely by activePeakId,
+   which Scene3D already computes via getActivePeakId
+   — no separate scroll-tracking logic to drift out
+   of sync.
+───────────────────────────────────────────── */
+
+function ProgressTrail({ activePeakId }: { activePeakId: string | null }) {
+  const peakNodes = useMemo(
+    () => PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end'),
+    []
+  );
+  const activeIndex = peakNodes.findIndex((n) => n.id === activePeakId);
+
+  return (
+    <div
+      className="pointer-events-none fixed right-6 top-1/2 z-[90] flex -translate-y-1/2 flex-col items-center gap-3"
+      aria-hidden="true"
+    >
+      {peakNodes.map((node, i) => {
+        const isActive = node.id === activePeakId;
+        const isPassed = activeIndex >= 0 && i <= activeIndex;
+
+        return (
+          <div
+            key={node.id}
+            className="rounded-full transition-all duration-300"
+            style={{
+              width: isActive ? 10 : 7,
+              height: isActive ? 10 : 7,
+              background: isPassed ? '#ffd27a' : 'rgba(255,210,122,0.25)',
+              border: '1.5px solid rgba(255,210,122,0.5)',
+              boxShadow: isActive
+                ? '0 0 14px #ffd27a, 0 0 28px rgba(255,210,122,0.5)'
+                : 'none',
+            }}
+          />
+        );
+      })}
+
+      {/* Trail line connecting the dots */}
+      <div
+        className="absolute left-1/2 top-0 -z-10 -translate-x-1/2"
+        style={{
+          width: 1,
+          height: '100%',
+          background:
+            'linear-gradient(to bottom, transparent, rgba(255,210,122,0.2) 15%, rgba(255,210,122,0.2) 85%, transparent)',
+        }}
+      />
+    </div>
   );
 }
 
@@ -486,10 +545,14 @@ export function Scene3D({ onPeakClick, activePeakId, onActivePeakChange }: Scene
         <ChaseCamera progressRef={progressRef} onActivePeakChange={onActivePeakChange} />
         <Sun />
         <DistantRidges />
-        <Trail />
+        {/* <Trail /> */}
         <Mountains onPeakClick={onPeakClick} />
         <Signposts onPeakClick={onPeakClick} activePeakId={activePeakId} />
       </Canvas>
+
+      {/* Plain DOM overlay — outside the Canvas, so it's cheap to
+          re-render on every scroll tick without touching R3F. */}
+      <ProgressTrail activePeakId={activePeakId} />
     </div>
   );
 }
