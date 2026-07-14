@@ -19,7 +19,7 @@
  * peak-tracking logic.
  */
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useScroll, useSpring, useMotionValueEvent } from 'framer-motion';
@@ -27,6 +27,7 @@ import * as THREE from 'three';
 
 import { JOURNEY_CURVE, PATH_NODES, getActivePeakId } from '../three/path';
 import { PEAKS } from '../data/portfolioPeaks';
+import desertBg from '../assets/images/desert-bg.png';
 
 interface Scene3DProps {
   onPeakClick: (id: string) => void;
@@ -83,7 +84,7 @@ function ChaseCamera({
   progressRef,
   onActivePeakChange,
 }: {
-  progressRef: React.MutableRefObject<number>;
+  progressRef: MutableRefObject<number>;
   onActivePeakChange: (id: string | null) => void;
 }) {
   const { camera } = useThree();
@@ -129,9 +130,17 @@ function createMountainGeometry(
   seed: number,
   palette: { base: string; mid: string; high: string }
 ): THREE.BufferGeometry {
-  const radialSegments = 10;
-  const heightSegments = 7;
-  const geometry = new THREE.ConeGeometry(radius, height, radialSegments, heightSegments, false);
+  const radialSegments = 32;
+  const heightSegments = 12;
+  const geometry = new THREE.CylinderGeometry(
+    radius * 0.12,
+    radius,
+    height,
+    radialSegments,
+    heightSegments,
+    true
+  );
+
   const position = geometry.attributes.position;
   const colors: number[] = [];
   const rng = mulberry32(seed);
@@ -145,18 +154,33 @@ function createMountainGeometry(
     const y = position.getY(i);
     const z = position.getZ(i);
 
+    const angle = Math.atan2(z, x);
     const distFromAxis = Math.sqrt(x * x + z * z);
+    const heightT = THREE.MathUtils.clamp((y + height / 2) / height, 0, 1);
+
     if (distFromAxis > 0.05) {
-      const jitter = 1 + (rng() - 0.5) * 0.2;
-      position.setX(i, x * jitter);
-      position.setZ(i, z * jitter);
+      const longDune =
+        Math.sin(angle * 1.25 + seed * 0.18) * 0.2 +
+        Math.sin(angle * 2.6 + seed * 0.33) * 0.12 +
+        Math.sin(angle * 5.4 + seed * 0.67) * 0.05;
+
+      const layeredErosion =
+        Math.sin(heightT * Math.PI * 1.6 + seed * 0.11) * 0.04 +
+        Math.sin(heightT * Math.PI * 3.2 + angle * 0.6) * 0.03;
+
+      const randomBreak = 1 + (rng() - 0.5) * 0.045;
+      const baseSpread = 1.08 + (1 - heightT) * 0.42;
+      const duneLean = 1 + longDune * (0.9 - heightT * 0.4);
+
+      position.setX(i, x * baseSpread * duneLean * randomBreak);
+      position.setZ(i, z * (0.52 + (1 - heightT) * 0.16 + layeredErosion) * randomBreak);
+      position.setY(i, y - Math.pow(heightT, 2.25) * height * 0.16);
     }
 
-    const heightT = THREE.MathUtils.clamp((y + height / 2) / height, 0, 1);
     const color =
-      heightT < 0.55
-        ? baseColor.clone().lerp(midColor, heightT / 0.55)
-        : midColor.clone().lerp(highColor, (heightT - 0.55) / 0.45);
+      heightT < 0.5
+        ? baseColor.clone().lerp(midColor, heightT / 0.5)
+        : midColor.clone().lerp(highColor, (heightT - 0.5) / 0.5);
 
     colors.push(color.r, color.g, color.b);
   }
@@ -167,13 +191,13 @@ function createMountainGeometry(
 }
 
 // Warm Golden Desert Palette — locked, do not change.
-const FOREGROUND_PALETTE = { base: '#6b2811', mid: '#a8501f', high: '#ffb066' };
-const RIDGE_PALETTE = { base: '#5c2a14', mid: '#c16a2c', high: '#ffcf8a' };
+const FOREGROUND_PALETTE = { base: '#9f3918', mid: '#e26624', high: '#ffad45' };
+const RIDGE_PALETTE = { base: '#b84a1d', mid: '#ef7c28', high: '#ffc05f' };
 
-const MOUNTAIN_RADIUS = 4.4;
-const MOUNTAIN_HEIGHT = 4.8;
+const MOUNTAIN_RADIUS = 6.8;
+const MOUNTAIN_HEIGHT = 3.65;
 // Must clear MOUNTAIN_RADIUS + trail radius with margin, or the base pokes into the path.
-const MOUNTAIN_OFFSET = 6.4;
+const MOUNTAIN_OFFSET = 7.4;
 
 /* ─────────────────────────────────────────────
    Foreground mountains — pushed clear of the
@@ -189,36 +213,59 @@ function Mountains({ onPeakClick }: { onPeakClick: (id: string) => void }) {
 
   return (
     <>
-      {peakNodes.map((node, index) => {
-        const sideSign = Math.sign(node.x) || 1;
-        const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
-        const geometry = useMemo(
-          () =>
-            createMountainGeometry(
-              MOUNTAIN_RADIUS,
-              MOUNTAIN_HEIGHT,
-              index * 97 + 11,
-              FOREGROUND_PALETTE
-            ),
-          [index]
-        );
-
-        return (
-          <SwayingMountain key={node.id} position={[apexX, 0, node.z]} phase={index * 1.3}>
-            <mesh
-              geometry={geometry}
-              position={[0, MOUNTAIN_HEIGHT / 2, 0]}
-              onClick={(event) => {
-                event.stopPropagation();
-                onPeakClick(node.id);
-              }}
-            >
-              <meshStandardMaterial vertexColors roughness={0.9} flatShading />
-            </mesh>
-          </SwayingMountain>
-        );
-      })}
+      {peakNodes.map((node, index) => (
+        <ForegroundMountain
+          key={node.id}
+          node={node}
+          index={index}
+          onPeakClick={onPeakClick}
+        />
+      ))}
     </>
+  );
+}
+
+function ForegroundMountain({
+  node,
+  index,
+  onPeakClick,
+}: {
+  node: (typeof PATH_NODES)[number];
+  index: number;
+  onPeakClick: (id: string) => void;
+}) {
+  const sideSign = Math.sign(node.x) || 1;
+  const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
+
+  const geometry = useMemo(
+    () =>
+      createMountainGeometry(
+        MOUNTAIN_RADIUS,
+        MOUNTAIN_HEIGHT,
+        index * 97 + 11,
+        FOREGROUND_PALETTE
+      ),
+    [index]
+  );
+
+  return (
+    <SwayingMountain key={node.id} position={[apexX, -0.25, node.z]} phase={index * 1.3}>
+      <mesh
+        geometry={geometry}
+        position={[0, MOUNTAIN_HEIGHT / 2, 0]}
+        onClick={(event) => {
+          event.stopPropagation();
+          onPeakClick(node.id);
+        }}
+      >
+        <meshStandardMaterial
+          vertexColors
+          roughness={0.96}
+          metalness={0}
+          flatShading
+        />
+      </mesh>
+    </SwayingMountain>
   );
 }
 
@@ -229,7 +276,7 @@ function SwayingMountain({
 }: {
   position: [number, number, number];
   phase: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -253,37 +300,59 @@ function SwayingMountain({
 function DistantRidges() {
   const ridges = useMemo(() => {
     const rng = mulberry32(4242);
-    return Array.from({ length: 12 }, (_, i) => {
-      const x = (rng() - 0.5) * 60;
-      const z = 20 + rng() * 130;
-      const radius = 6 + rng() * 6;
-      const height = 8 + rng() * 8;
+    return Array.from({ length: 14 }, (_, i) => {
+      const x = (rng() - 0.5) * 70;
+      const z = 18 + rng() * 142;
+      const radius = 9 + rng() * 10;
+      const height = 3.2 + rng() * 4.8;
       return { x, z, radius, height, seed: i * 53 + 5 };
     });
   }, []);
 
   return (
     <>
-      {ridges.map((ridge, i) => {
-        const geometry = useMemo(
-          () => createMountainGeometry(ridge.radius, ridge.height, ridge.seed, RIDGE_PALETTE),
-          [i]
-        );
-
-        return (
-          <mesh key={i} geometry={geometry} position={[ridge.x, ridge.height / 2 - 1.2, ridge.z]}>
-            <meshStandardMaterial
-              vertexColors
-              roughness={1}
-              flatShading
-              fog
-              transparent
-              opacity={0.7}
-            />
-          </mesh>
-        );
-      })}
+      {ridges.map((ridge, i) => (
+        <RidgeMountain key={i} ridge={ridge} index={i} />
+      ))}
     </>
+  );
+}
+
+function RidgeMountain({
+  ridge,
+  index,
+}: {
+  ridge: {
+    x: number;
+    z: number;
+    radius: number;
+    height: number;
+    seed: number;
+  };
+  index: number;
+}) {
+  const geometry = useMemo(
+    () => createMountainGeometry(ridge.radius, ridge.height, ridge.seed, RIDGE_PALETTE),
+    [ridge.height, ridge.radius, ridge.seed]
+  );
+
+  return (
+    <mesh
+      key={index}
+      geometry={geometry}
+      position={[ridge.x, ridge.height / 2 - 1.55, ridge.z]}
+      scale={[1.25, 0.82, 1]}
+    >
+      <meshStandardMaterial
+        vertexColors
+        roughness={1}
+        metalness={0}
+        flatShading
+        fog
+        transparent
+        opacity={0.74}
+      />
+    </mesh>
   );
 }
 
@@ -299,25 +368,25 @@ function Sun() {
   useFrame(() => {
     if (!groupRef.current) return;
     groupRef.current.position.set(
-      camera.position.x + 18,
-      camera.position.y + 14,
-      camera.position.z + 55
+      camera.position.x - 17,
+      camera.position.y + 9.2,
+      camera.position.z + 54
     );
   });
 
   return (
     <group ref={groupRef}>
       <mesh>
-        <sphereGeometry args={[3.2, 24, 24]} />
-        <meshBasicMaterial color="#fff3dd" fog={false} />
+        <sphereGeometry args={[4.5, 40, 28]} />
+        <meshBasicMaterial color="#ffbd53" fog={false} transparent opacity={0.28} />
       </mesh>
-      {[5, 7, 9.5].map((r, i) => (
+      {[6.8, 9.5, 13].map((r, i) => (
         <mesh key={r}>
-          <sphereGeometry args={[r, 24, 24]} />
+          <sphereGeometry args={[r, 40, 28]} />
           <meshBasicMaterial
             color="#ff8a2a"
             transparent
-            opacity={0.16 - i * 0.045}
+            opacity={0.08 - i * 0.02}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             fog={false}
@@ -325,6 +394,40 @@ function Sun() {
         </mesh>
       ))}
     </group>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Scene Ground — anchors 3D mountains into the
+   background image so they do not look like they
+   are floating above the desert.
+───────────────────────────────────────────── */
+
+function SceneGround() {
+  return (
+    <>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.78, 64]}>
+        <planeGeometry args={[140, 180, 1, 1]} />
+        <meshBasicMaterial
+          color="#d94a12"
+          transparent
+          opacity={0.18}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.74, 82]}>
+        <planeGeometry args={[150, 150, 1, 1]} />
+        <meshBasicMaterial
+          color="#f27a1e"
+          transparent
+          opacity={0.999}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </>
   );
 }
 
@@ -390,7 +493,7 @@ function Signposts({
         const isActive = activePeakId === node.id;
 
         return (
-          <group key={node.id} position={[apexX, 0, node.z]}>
+          <group key={node.id} position={[apexX, -1.15, node.z]}>
             {/* Connector beam + dot — ties the card down to the summit */}
             {isActive && (
               <>
@@ -424,27 +527,26 @@ function Signposts({
                   onClick={() => onPeakClick(node.id)}
                   className="checkpoint-pop pointer-events-auto flex min-w-[620px] max-w-[720px] flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
                   style={{
-                    background: '#1a0902',
+                    background: '#290d05',
                     boxShadow:
-                      '0 0 0 1px rgba(255,210,122,0.32), 0 20px 56px rgba(0,0,0,0.72), 0 0 58px rgba(255,140,42,0.56)',
+                      '0 0 0 1px rgba(255,190,83,0.36), 0 20px 56px rgba(41,13,5,0.72), 0 0 58px rgba(249,146,47,0.56)',
                   }}
                 >
-                  <span className="text-sm font-extrabold uppercase tracking-[0.28em] text-[#ffd27a]">
+                  <span className="text-sm font-extrabold uppercase tracking-[0.28em] text-[#ffbd53]">
                     Checkpoint {String(index + 1).padStart(2, '0')} /{' '}
                     {String(peakNodes.length).padStart(2, '0')}
                   </span>
 
-                  <span className="font-display text-[4rem] font-extrabold leading-[0.95] tracking-[-0.04em] text-[#fff8ee] drop-shadow-[0_5px_18px_rgba(0,0,0,0.7)]">
+                  <span className="font-display text-[4rem] font-extrabold leading-[0.95] tracking-[-0.04em] text-[#fff0c7] drop-shadow-[0_5px_18px_rgba(0,0,0,0.7)]">
                     {peak.label}
                   </span>
 
-                  <span className="text-xl font-extrabold uppercase tracking-[0.22em] text-[#ffd27a]">
+                  <span className="text-xl font-extrabold uppercase tracking-[0.22em] text-[#ffbd53]">
                     {peak.subtitle}
                   </span>
 
-
-                  <span className="mt-4 flex items-center gap-3 rounded-full bg-[#ffd27a] px-8 py-4 text-base font-extrabold uppercase tracking-[0.16em] text-[#2a0902] shadow-[0_0_20px_rgba(255,210,122,0.35)]">
-                    <span className="h-3 w-3 animate-pulse rounded-full bg-[#2a0902]" />
+                  <span className="mt-4 flex items-center gap-3 rounded-full bg-[#ffbd53] px-8 py-4 text-base font-extrabold uppercase tracking-[0.16em] text-[#290d05] shadow-[0_0_20px_rgba(255,190,83,0.35)]">
+                    <span className="h-3 w-3 animate-pulse rounded-full bg-[#290d05]" />
                     Tap to explore
                     <span className="text-xl leading-none">→</span>
                   </span>
@@ -453,7 +555,7 @@ function Signposts({
                 <button
                   type="button"
                   onClick={() => onPeakClick(node.id)}
-                  className="pointer-events-auto h-3 w-3 rounded-full border border-[rgba(255,210,122,0.5)] bg-[rgba(255,210,122,0.35)]"
+                  className="pointer-events-auto h-3 w-3 rounded-full border border-[rgba(255,189,83,0.5)] bg-[rgba(255,189,83,0.35)]"
                   aria-label={peak.label}
                 />
               )}
@@ -498,10 +600,10 @@ function ProgressTrail({ activePeakId }: { activePeakId: string | null }) {
             style={{
               width: isActive ? 10 : 7,
               height: isActive ? 10 : 7,
-              background: isPassed ? '#ffd27a' : 'rgba(255,210,122,0.25)',
-              border: '1.5px solid rgba(255,210,122,0.5)',
+              background: isPassed ? '#ffbd53' : 'rgba(255,189,83,0.25)',
+              border: '1.5px solid rgba(255,189,83,0.5)',
               boxShadow: isActive
-                ? '0 0 14px #ffd27a, 0 0 28px rgba(255,210,122,0.5)'
+                ? '0 0 14px #ffbd53, 0 0 28px rgba(255,189,83,0.5)'
                 : 'none',
             }}
           />
@@ -515,7 +617,7 @@ function ProgressTrail({ activePeakId }: { activePeakId: string | null }) {
           width: 1,
           height: '100%',
           background:
-            'linear-gradient(to bottom, transparent, rgba(255,210,122,0.2) 15%, rgba(255,210,122,0.2) 85%, transparent)',
+            'linear-gradient(to bottom, transparent, rgba(255,189,83,0.2) 15%, rgba(255,189,83,0.2) 85%, transparent)',
         }}
       />
     </div>
@@ -530,19 +632,54 @@ export function Scene3D({ onPeakClick, activePeakId, onActivePeakChange }: Scene
   const progressRef = useJourneyProgress();
 
   return (
-    <div className="fixed inset-0 z-0">
-      <Canvas
-        gl={{ antialias: true }}
-        camera={{ fov: 55, near: 0.1, far: 300, position: [0, 2.6, -6.5] }}
-      >
-        <color attach="background" args={['#2a0d04']} />
-        <fog attach="fog" args={['#4c1a05', 14, 85]} />
+    <div className="fixed inset-0 z-0 overflow-hidden">
+      {/* ── Fixed illustrated desert background — not a 3D paper plane ── */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src={desertBg}
+          alt=""
+          draggable={false}
+          className="h-full w-full select-none object-cover object-center"
+          style={{
+            transform: 'scale(1.08)',
+            transformOrigin: 'center center',
+          }}
+        />
+      </div>
 
-        <hemisphereLight args={['#ffd27a', '#5c2410', 0.8]} />
-        <ambientLight color="#ffb066" intensity={0.25} />
-        <directionalLight position={[6, 10, -4]} intensity={1.2} color="#ff8a2a" />
+      {/* ── Color blend layer — makes Canvas mountains belong to the image ── */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(230,104,35,0.04) 0%, rgba(230,104,35,0.10) 42%, rgba(105,30,8,0.38) 100%)',
+        }}
+      />
+
+      {/* ── Bottom sand haze — hides hard intersection between 3D and bg ── */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-[34vh]"
+        style={{
+          background:
+            'linear-gradient(to top, rgba(41,13,5,0.55) 0%, rgba(175,55,12,0.26) 45%, transparent 100%)',
+        }}
+      />
+
+      <Canvas
+        className="relative z-[2]"
+        gl={{ antialias: true, alpha: true }}
+        camera={{ fov: 55, near: 0.1, far: 300, position: [0, 2.6, -6.5] }}
+        style={{ background: 'transparent' }}
+      >
+        <fog attach="fog" args={['#ef7c28', 18, 118]} />
+
+        <hemisphereLight args={['#ffbd53', '#a83818', 0.92]} />
+        <ambientLight color="#ff9c37" intensity={0.28} />
+        <directionalLight position={[-7, 11, -5]} intensity={1.18} color="#ffbd53" />
+        <directionalLight position={[6, 5, -10]} intensity={0.32} color="#d9471d" />
 
         <ChaseCamera progressRef={progressRef} onActivePeakChange={onActivePeakChange} />
+        <SceneGround />
         <Sun />
         <DistantRidges />
         {/* <Trail /> */}
