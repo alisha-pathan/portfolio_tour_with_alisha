@@ -13,8 +13,8 @@
  * dolly-in. Content restructured into two side panels instead of one
  * centered column, so there's an open "window" in the middle.
  */
-
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 
 import { PEAKS, type Peak, type Project } from '../data/portfolioPeaks';
 import { PATH_NODES } from '../three/path';
@@ -131,22 +131,12 @@ function PeakContent({ peak }: { peak: Peak }) {
               {content.skills
                 .filter((s) => s.category === category)
                 .map((skill) => (
-                  <div
+                  <span
                     key={skill.name}
-                    className="flex items-center gap-2.5 rounded-lg border border-[rgba(255,210,122,0.2)] bg-[rgba(255,210,122,0.07)] px-3 py-1.5"
+                    className="rounded-full border border-[rgba(255,210,122,0.24)] bg-[rgba(255,210,122,0.08)] px-3.5 py-1.5 text-sm font-medium text-[#fff8ee]"
                   >
-                    <span className="text-sm font-medium text-[#fff8ee]">{skill.name}</span>
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className={`h-1.5 w-1.5 rounded-sm ${
-                            i < skill.level ? 'bg-[#ffd27a]' : 'bg-[rgba(255,210,122,0.18)]'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                    {skill.name}
+                  </span>
                 ))}
             </div>
           </div>

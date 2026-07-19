@@ -1,6 +1,6 @@
 export type Skill = {
   name: string;
-  level: number; // 1-5
+  level: number; // retained for type-compat with existing components; no longer rendered as dots — see PeakDetailOverlay skills block
   category: string;
 };
 
@@ -27,9 +27,9 @@ export type Peak = {
   id: string;
   label: string;
   subtitle: string;
-  xPercent: number;  // 0–100 horizontal % in the mountain scene
-  eagleX: number;    // eagle X at this peak (viewport %)
-  eagleY: number;    // eagle Y at this peak (viewport %)
+  xPercent: number; // 0–100 horizontal % in the mountain scene
+  eagleX: number; // eagle X at this peak (viewport %)
+  eagleY: number; // eagle Y at this peak (viewport %)
   content: PeakContent;
 };
 
@@ -44,8 +44,8 @@ export const PEAKS: Peak[] = [
     content: {
       type: 'origin',
       title: 'React & TypeScript Frontend Engineer',
-      tagline: 'Building Enterprise Web Applications with precision and craft.',
-      bio: `Hi, I'm Alisha — a frontend engineer specialising in React, TypeScript, and enterprise-scale UI systems. I've spent my career turning complex business requirements into clean, reliable interfaces that real users depend on daily. I thrive at the intersection of engineering rigour and great user experience.`,
+      tagline: 'Turning Figma specs into production interfaces, end to end.',
+      bio: `Hi, I'm Alisha — a frontend-focused engineer with over a year of experience building production web applications in React and TypeScript. I've owned features solo, from Figma spec through deployment, and collaborated effectively inside cross-functional Agile teams. I work across state management (Redux, Context API, React Query), REST API integration, and modern UI systems including Ant Design, Tailwind CSS and shadcn/ui. I recently completed Google's 5-Day AI Agents Intensive Course (Kaggle) — I'm actively building toward AI-integrated product development.`,
     },
   },
   {
@@ -58,18 +58,32 @@ export const PEAKS: Peak[] = [
     content: {
       type: 'skills',
       skills: [
-        { name: 'React', level: 5, category: 'Framework' },
-        { name: 'TypeScript', level: 5, category: 'Language' },
-        { name: 'JavaScript', level: 5, category: 'Language' },
-        { name: 'Tailwind CSS', level: 4, category: 'Styling' },
-        { name: 'Ant Design', level: 4, category: 'UI Library' },
-        { name: 'React Query', level: 4, category: 'Data Fetching' },
-        { name: 'Redux Toolkit', level: 4, category: 'State Management' },
-        { name: 'REST APIs', level: 5, category: 'Integration' },
-        { name: 'Vite', level: 4, category: 'Tooling' },
-        { name: 'Git', level: 4, category: 'Version Control' },
-        { name: 'Framer Motion', level: 3, category: 'Animation' },
-        { name: 'Radix UI', level: 3, category: 'Components' },
+        // Core Stack — daily-driver
+        { name: 'React (JSX/TSX)', level: 5, category: 'Core Stack' },
+        { name: 'TypeScript', level: 5, category: 'Core Stack' },
+        { name: 'JavaScript', level: 5, category: 'Core Stack' },
+        { name: 'Redux / Redux Toolkit', level: 5, category: 'Core Stack' },
+        { name: 'Context API', level: 5, category: 'Core Stack' },
+        { name: 'React Query', level: 5, category: 'Core Stack' },
+
+        // Ecosystem & Tooling
+        { name: 'Ant Design', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Tailwind CSS', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'shadcn/ui', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Bootstrap', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'React Hook Form', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Zod', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Axios', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Chart.js', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Day.js / date-fns', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Mermaid', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Postman', level: 4, category: 'Ecosystem & Tooling' },
+        { name: 'Git', level: 4, category: 'Ecosystem & Tooling' },
+
+        // Practices
+        { name: 'Agile / Scrum', level: 4, category: 'Practices' },
+        { name: 'Release-based QA Coordination', level: 4, category: 'Practices' },
+        { name: 'Version Control Workflows', level: 4, category: 'Practices' },
       ],
     },
   },
@@ -84,14 +98,14 @@ export const PEAKS: Peak[] = [
       type: 'experience',
       roles: [
         {
-          company: 'IMS — Enterprise Platform',
-          duration: '2+ years',
+          company: 'IMS Nucleii (IMS Group)',
+          duration: 'June 2025 – Present',
           highlights: [
-            'Built production-grade frontend modules for Agreement, Commercial, and Billing systems used by enterprise clients',
-            'Developed complex, multi-step form workflows with advanced validation using React Hook Form and Zod',
-            'Integrated 20+ REST API endpoints with React Query, ensuring optimal caching and error handling',
-            'Collaborated with backend and QA teams in an Agile environment with 2-week sprint cycles',
-            'Led component architecture decisions for the Billing module, reducing code duplication by ~40%',
+            'Develop frontend modules for agreements, billing, reporting, masters, templates and rate-management workflows using React.js, TypeScript, React Query, Redux and Axios.',
+            'Translate Figma designs into responsive, production-ready interfaces using React.js, TypeScript and Ant Design.',
+            'Verify feature functionality through self-testing prior to handoff to QA.',
+            'Coordinate with backend and QA teams across sprint cycles to validate API behavior, resolve UI defects and deliver release-ready frontend features.',
+            'Prepare technical interview material and conduct screening interviews for fresher/junior frontend candidates.',
           ],
         },
       ],
@@ -108,87 +122,96 @@ export const PEAKS: Peak[] = [
       type: 'projects',
       projects: [
         {
-          id: 'billing-wizard',
-          title: 'Billing Advice Wizard',
+          id: 'ai-recruitment',
+          title: 'AI Recruitment Automation Platform',
           problem:
-            'Billing advisors needed to generate complex billing advice documents through a tedious, error-prone manual process that took 45+ minutes per document.',
-          role: 'Led frontend development end-to-end — architecture, implementation, and QA liaison.',
-          tech: ['React', 'TypeScript', 'Ant Design', 'React Query', 'React Hook Form', 'Zod'],
+            'Recruiters needed a streamlined, AI-driven way to move candidates through the hiring pipeline, with both a candidate-facing experience and an internal admin view.',
+          role: 'Built both the candidate-facing and admin-facing interfaces as part of the frontend team.',
+          tech: ['React', 'TypeScript', 'React Hook Form', 'Zod', 'shadcn/ui'],
           features: [
-            '7-step guided wizard with conditional branching logic',
-            'Real-time validation with contextual error messages',
-            'Auto-save and draft recovery on session loss',
-            'PDF preview generation via API integration',
-            'Role-based step access control',
+            'Handled streamed LLM responses on the frontend, including chunked reasoning output, for a real-time AI-assisted flow',
+            'Dynamic, schema-driven forms across 7+ modules built with React Hook Form and Zod',
+            'shadcn/ui components used throughout for a consistent, accessible design system',
+            'Standardized API request handling across the application for reliability',
           ],
           impact:
-            'Reduced billing document creation time from 45 minutes to under 10 minutes. Zero regression bugs reported post-launch.',
+            'Powered a real-time, AI-assisted recruitment journey end to end — one of the first frontend surfaces on the team to handle live streamed model output.',
         },
         {
-          id: 'commercial-rates',
-          title: 'Commercial Rate Management',
+          id: 'ai-chatbot',
+          title: 'AI Assistant & Chatbot Platform',
           problem:
-            'Rate schedules were managed in spreadsheets, making it hard to track versions, apply overrides, or audit changes.',
-          role: 'Frontend engineer — built the full rate table UI and override system.',
-          tech: ['React', 'TypeScript', 'Redux Toolkit', 'Ant Design', 'REST APIs'],
+            'The product needed a chatbot experience capable of handling streamed responses smoothly, plus a way to generate diagrams from conversation content.',
+          role: 'Developed and maintained the chatbot feature and reusable common components across 3+ design iterations.',
+          tech: ['React (JSX)', 'Redux Toolkit', 'Mermaid', 'Axios'],
           features: [
-            'Dynamic rate matrix table with inline editing',
-            'Override management with effective date ranges',
-            'Audit trail panel showing change history',
-            'Bulk import from CSV with validation feedback',
-            'Permission-based edit/view mode switching',
+            'Streamed response handling for a responsive, real-time chat feel',
+            'Mermaid-based diagram generation feature',
+            'Implemented authentication, including automatic access-token refresh',
+            'Centralized token and error handling across the application via Axios interceptors',
           ],
           impact:
-            'Replaced a manual spreadsheet process used by 150+ users. Audit compliance improved significantly.',
+            'Resolved critical bugs in the authentication flow and shipped through 3+ iterations as the product design evolved.',
         },
         {
-          id: 'org-chart',
-          title: 'Organisation Chart',
+          id: 'agreements-erp',
+          title: 'Enterprise Agreements ERP Platform',
           problem:
-            'No visual representation of the reporting structure existed, making it difficult for management to understand team hierarchy.',
-          role: 'Sole frontend developer for this module.',
-          tech: ['React', 'TypeScript', 'SVG', 'React Query'],
+            'The business needed ERP-style master and transaction data flows implemented directly from SRS/documentation specifications, with several requirement ambiguities to resolve along the way.',
+          role: 'Implemented data flows and coordinated directly with the tech lead to resolve requirement ambiguities.',
+          tech: ['React (TSX)', 'React Query', 'Ant Design'],
           features: [
-            'Interactive SVG org chart with pan & zoom',
-            'Click-to-expand node details',
-            'Search and highlight path to node',
-            'Export to PNG functionality',
-            'Live sync with HR system via API',
-          ],
-          impact: 'Used weekly by 8 department heads to plan resource allocation.',
-        },
-        {
-          id: 'work-reporting',
-          title: 'Work Reporting Dashboard',
-          problem:
-            'Teams had no unified view of project progress, hours logged, and deliverable status.',
-          role: 'Built the reporting UI layer and data visualisation components.',
-          tech: ['React', 'TypeScript', 'Recharts', 'React Query', 'Ant Design'],
-          features: [
-            'Date-range filtered report views',
-            'Bar, line, and pie chart visualisations',
-            'Drill-down from summary to individual line items',
-            'Export to Excel via API',
-            'Scheduled email report configuration',
-          ],
-          impact: 'Consolidated 5 separate manual reports into one system, saving management ~3 hours per week.',
-        },
-        {
-          id: 'masters-crud',
-          title: 'Masters CRUD System',
-          problem:
-            'System-wide reference data (lookup tables, configuration values) had no unified admin interface.',
-          role: 'Designed and built a reusable, configuration-driven CRUD framework.',
-          tech: ['React', 'TypeScript', 'Ant Design', 'React Query', 'REST APIs'],
-          features: [
-            'Config-driven table and form generation',
-            'Supports 30+ entity types from a single codebase',
-            'Search, filter, paginate across all entities',
-            'Bulk operations with confirmation dialogs',
-            'Soft delete with restore capability',
+            'Managed client lifecycle functionality: agreement records, master billing, templates and rate structures',
+            'Designed dynamic templates to support configurable enterprise workflows',
+            'Data-heavy agreement screens with tables, filters, forms, validations and conditional workflows',
+            'Streamlined request handling to keep API logic consistent across modules',
           ],
           impact:
-            'Replaced 30 separate admin screens with a single reusable framework, reducing frontend code by ~60%.',
+            'Delivered a configurable workflow system that kept API and UI logic consistent across multiple enterprise modules.',
+        },
+        {
+          id: 'employee-hierarchy',
+          title: 'Employee Hierarchy & Directory Platform',
+          problem:
+            'HR had no live, navigable view of the company-wide reporting structure, and needed a way to search, filter and export it securely.',
+          role: 'Sole frontend developer — matched Figma specifications precisely with live data syncing.',
+          tech: ['React', 'TypeScript'],
+          features: [
+            'Multi-filter search system for navigating employee data',
+            'Role-based access control for secure HR management',
+            'File export supporting standard, tree-structured and Excel formats',
+          ],
+          impact:
+            'Delivered a reusable module that was later integrated into the broader ERP platform — built once, adopted company-wide.',
+        },
+        {
+          id: 'asset-management',
+          title: 'Asset Management System (AMS)',
+          problem:
+            'Internal asset tracking needed secure, role-gated access as the system grew to support more workflows.',
+          role: 'Owned the authentication and role-based authorization module.',
+          tech: ['React (TSX)', 'Redux', 'Tailwind CSS'],
+          features: [
+            'Login flows and permission-based access control across 4+ user roles',
+            'Extended the system with additional frontend modules for asset tracking',
+          ],
+          impact:
+            'Established the access-control foundation the rest of the AMS frontend was built on.',
+        },
+        {
+          id: 'id-card-system',
+          title: 'Employee ID Card & Print Management System',
+          problem:
+            'HR needed an in-app way to generate, print and manage employee ID cards without relying on external tools.',
+          role: 'Engineered dynamic card templates and the printer-integrated system.',
+          tech: ['React (TSX)', 'Redux', 'Axios', 'Chart.js'],
+          features: [
+            'Dynamic, templated card generation',
+            'In-app printing integration',
+            'Record maintenance and data updates',
+          ],
+          impact:
+            'Gave HR direct, self-serve control over card generation and record updates.',
         },
       ],
     },
@@ -204,40 +227,34 @@ export const PEAKS: Peak[] = [
       type: 'impact',
       achievements: [
         {
-          icon: '⚡',
-          title: 'Production-Ready UI',
+          icon: '🏗️',
+          title: 'End-to-End Ownership',
           description:
-            'Every module I built went to production and is used by real enterprise clients with zero critical bugs reported.',
+            'Sole frontend owner of the Employee Hierarchy platform — from Figma spec through to live data syncing.',
         },
         {
           icon: '♻️',
-          title: 'Reusable Component Systems',
+          title: 'Built for Reuse',
           description:
-            'Built config-driven component frameworks that served 30+ entity types from a single codebase — cutting code volume by 60%.',
+            'Delivered a module that was later adopted into the broader company ERP platform, not just a one-off feature.',
         },
         {
-          icon: '🔗',
-          title: 'Deep API Integration',
+          icon: '🤖',
+          title: 'Real-Time AI Integration',
           description:
-            'Integrated 20+ REST API endpoints per module with proper caching, optimistic updates, and error boundaries using React Query.',
+            'Handled streamed, chunked LLM reasoning output on the frontend to power a live AI-assisted recruitment flow.',
         },
         {
-          icon: '✅',
-          title: 'Advanced Validation',
+          icon: '🔐',
+          title: 'Owned Production Auth',
           description:
-            'Implemented multi-step form validation with conditional logic, real-time feedback, and server-error reconciliation.',
+            'Implemented automatic access-token refresh and resolved critical bugs in a live authentication flow.',
         },
         {
-          icon: '⏱️',
-          title: 'Measurable Time Savings',
+          icon: '🧩',
+          title: 'Systems Thinking',
           description:
-            'The Billing Wizard alone reduced a critical manual process from 45 minutes to under 10 — a 78% efficiency gain.',
-        },
-        {
-          icon: '🏗️',
-          title: 'Architecture Leadership',
-          description:
-            'Led component architecture decisions on the Billing module, establishing patterns adopted across the wider frontend team.',
+            'Built 7+ schema-driven dynamic forms on a consistent design system, rather than one-off screens per module.',
         },
       ],
     },
@@ -252,9 +269,9 @@ export const PEAKS: Peak[] = [
     content: {
       type: 'resume',
       links: [
-        { label: 'Download Resume', url: '#', icon: '📄' },
-        { label: 'LinkedIn Profile', url: 'https://linkedin.com', icon: '💼' },
-        { label: 'GitHub Profile', url: 'https://github.com', icon: '🐙' },
+        { label: 'Download Resume', url: '#', icon: '📄' }, // TODO: wire up real resume link later
+        { label: 'LinkedIn Profile', url: 'https://linkedin.com/in/alisha-pathan', icon: '💼' },
+        { label: 'GitHub Profile', url: 'https://github.com/alisha-pathan', icon: '🐙' },
       ],
     },
   },
@@ -267,11 +284,11 @@ export const PEAKS: Peak[] = [
     eagleY: 50,
     content: {
       type: 'contact',
-      email: 'alisha@example.com',
-      linkedin: 'https://linkedin.com',
-      github: 'https://github.com',
+      email: '[email protected]',
+      linkedin: 'https://linkedin.com/in/alisha-pathan',
+      github: 'https://github.com/alisha-pathan',
       message:
-        "I'm open to senior frontend roles, consulting engagements, and interesting projects. If you're building something great with React and TypeScript, let's talk.",
+        "I'm open to frontend engineering roles and interesting React/TypeScript projects. If you're building something great, let's talk.",
     },
   },
 ];
