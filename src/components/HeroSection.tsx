@@ -3,6 +3,13 @@
  * @description Opening hero — fades and lifts away smoothly as soon as
  * scrolling begins, revealing the desert scene beneath. NO 3D flip — that
  * rotateX(-110deg) + preserve-3d combo was causing the upside-down mirror glitch.
+ *
+ * v2: the CTA button wrapper was `pointer-events-auto` unconditionally,
+ * even after its opacity faded to 0 — since this section is `sticky` and
+ * stays mounted for the ENTIRE 900vh scroll journey, that invisible button
+ * area was sitting there the whole time, silently swallowing clicks meant
+ * for things underneath it (like the checkpoint cards). Now it only
+ * accepts clicks while the hero is actually visible (before hasScrolled).
  */
 
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
@@ -99,7 +106,9 @@ export function HeroSection({ onBeginAscent, hasScrolled }: HeroSectionProps) {
 
         {/* ── CTA Buttons ───────────────────────── */}
         <motion.div
-          className="pointer-events-auto flex flex-wrap justify-center gap-3.5"
+          className={`flex flex-wrap justify-center gap-3.5 ${
+            hasScrolled ? 'pointer-events-none' : 'pointer-events-auto'
+          }`}
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.66, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

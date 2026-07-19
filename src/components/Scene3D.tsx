@@ -17,6 +17,17 @@
  * plain DOM overlay, sibling to the Canvas, driven by the same
  * activePeakId this file already computes — no separate/driftable copy of
  * peak-tracking logic.
+ *
+ * v8: SceneGround was two flat, hard-edged planes at different fixed
+ * opacities (0.18 and 0.999) — the visible rectangular edges + opacity
+ * jump between them is what read as a disconnected "floating patch."
+ * Replaced with ONE plane using a true per-vertex alpha gradient (same
+ * two colors, #f27a1e near center fading to #d94a12, then to fully
+ * transparent at the edges via THREE.MathUtils.smoothstep) — a seamless
+ * fade instead of a hard boundary. No other color, position, mountain,
+ * camera, or scroll logic changed. Image background kept as-is (this is
+ * the confirmed direction — illustrated sky/mountains/dunes stays, only
+ * the 3D ground's blend into it was ever the problem).
  */
 
 import { useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
@@ -30,9 +41,12 @@ import { PEAKS } from '../data/portfolioPeaks';
 import desertBg from '../assets/images/desert-bg.png';
 
 interface Scene3DProps {
-  onPeakClick: (id: string) => void;
+  onPeakClick: (id: string, origin?: { x: number; y: number }) => void;
   activePeakId: string | null;
   onActivePeakChange: (id: string | null) => void;
+  // NEW: which peak's detail page is currently open — camera dollies in
+  // to that specific mountain while this is set, null = normal scroll ride.
+  zoomPeakId: string | null;
 }
 
 const tmpPos = new THREE.Vector3();
@@ -83,14 +97,43 @@ function useJourneyProgress() {
 function ChaseCamera({
   progressRef,
   onActivePeakChange,
+  zoomPeakId,
 }: {
   progressRef: MutableRefObject<number>;
   onActivePeakChange: (id: string | null) => void;
+  zoomPeakId: string | null;
 }) {
   const { camera } = useThree();
   const lastActiveId = useRef<string | null>(null);
 
   useFrame(() => {
+    // ── Focus mode: a peak page is open. Dolly the camera in close to
+    // that specific mountain and hold there — this is what actually makes
+    // it look like the mountain is "zooming in," not just the DOM card. ──
+    if (zoomPeakId) {
+      const node = PATH_NODES.find((n) => n.id === zoomPeakId);
+
+      if (node) {
+        const sideSign = Math.sign(node.x) || 1;
+        const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
+
+        // Only the clicked view is tighter.
+        // The normal scroll camera remains untouched.
+        const targetX = apexX;
+        const targetY = MOUNTAIN_HEIGHT * 0.78;
+        const targetZ = node.z - MOUNTAIN_RADIUS * 0.45;
+
+        camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.07);
+        camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.07);
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.07);
+
+        camera.lookAt(apexX, MOUNTAIN_HEIGHT * 0.92, node.z);
+      }
+
+      return;
+    }
+
+    // ── Normal mode: ride the scroll-driven curve, exactly as before. ──
     const u = THREE.MathUtils.clamp(progressRef.current, 0, 1);
     const uAhead = THREE.MathUtils.clamp(u + 0.05, 0, 1);
 
@@ -205,7 +248,11 @@ const MOUNTAIN_OFFSET = 7.4;
    the trail underneath never clip into them.
 ───────────────────────────────────────────── */
 
-function Mountains({ onPeakClick }: { onPeakClick: (id: string) => void }) {
+function Mountains({
+  onPeakClick,
+}: {
+  onPeakClick: (id: string, origin?: { x: number; y: number }) => void;
+}) {
   const peakNodes = useMemo(
     () => PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end'),
     []
@@ -232,7 +279,7 @@ function ForegroundMountain({
 }: {
   node: (typeof PATH_NODES)[number];
   index: number;
-  onPeakClick: (id: string) => void;
+  onPeakClick: (id: string, origin?: { x: number; y: number }) => void;
 }) {
   const sideSign = Math.sign(node.x) || 1;
   const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
@@ -255,7 +302,10 @@ function ForegroundMountain({
         position={[0, MOUNTAIN_HEIGHT / 2, 0]}
         onClick={(event) => {
           event.stopPropagation();
-          onPeakClick(node.id);
+          onPeakClick(node.id, {
+            x: event.nativeEvent.clientX,
+            y: event.nativeEvent.clientY,
+          });
         }}
       >
         <meshStandardMaterial
@@ -400,34 +450,51 @@ function Sun() {
 /* ─────────────────────────────────────────────
    Scene Ground — anchors 3D mountains into the
    background image so they do not look like they
-   are floating above the desert.
+   are floating above the desert. ONE plane with a
+   true per-vertex alpha gradient: same two colors
+   as before (#f27a1e near center, #d94a12 further
+   out), smoothly fading to fully transparent at the
+   edges — no hard rectangular boundary, no stacked
+   opacity jump between two separate planes.
 ───────────────────────────────────────────── */
 
 function SceneGround() {
-  return (
-    <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.78, 64]}>
-        <planeGeometry args={[140, 180, 1, 1]} />
-        <meshBasicMaterial
-          color="#d94a12"
-          transparent
-          opacity={0.18}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+  const geometry = useMemo(() => {
+    const width = 220;
+    const depth = 260;
+    const geo = new THREE.PlaneGeometry(width, depth, 48, 48);
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.74, 82]}>
-        <planeGeometry args={[150, 150, 1, 1]} />
-        <meshBasicMaterial
-          color="#f27a1e"
-          transparent
-          opacity={0.999}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-    </>
+    const colorNear = new THREE.Color('#f27a1e');
+    const colorFar = new THREE.Color('#d94a12');
+
+    const position = geo.attributes.position;
+    const colors: number[] = [];
+
+    for (let i = 0; i < position.count; i += 1) {
+      const x = position.getX(i);
+      const y = position.getY(i);
+
+      const nx = x / (width / 2);
+      const ny = y / (depth / 2);
+      const dist = Math.sqrt(nx * nx + ny * ny);
+      const t = THREE.MathUtils.clamp(dist, 0, 1);
+
+      // Fully opaque near the center, smoothly fading to fully
+      // transparent by the edge — the actual "graceful" part.
+      const alpha = 1 - THREE.MathUtils.smoothstep(dist, 0.32, 1);
+      const color = colorNear.clone().lerp(colorFar, t);
+
+      colors.push(color.r, color.g, color.b, alpha);
+    }
+
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+    return geo;
+  }, []);
+
+  return (
+    <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.76, 72]}>
+      <meshBasicMaterial vertexColors transparent depthWrite={false} side={THREE.DoubleSide} />
+    </mesh>
   );
 }
 
@@ -472,7 +539,7 @@ function Signposts({
   onPeakClick,
   activePeakId,
 }: {
-  onPeakClick: (id: string) => void;
+  onPeakClick: (id: string, origin?: { x: number; y: number }) => void;
   activePeakId: string | null;
 }) {
   const peakNodes = useMemo(
@@ -524,13 +591,13 @@ function Signposts({
               {isActive ? (
                 <button
                   type="button"
-                  onClick={() => onPeakClick(node.id)}
-                  className="checkpoint-pop pointer-events-auto flex min-w-[620px] max-w-[720px] flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
+                  className="checkpoint-pop pointer-events-auto flex min-w-[620px] max-w-[720px] cursor-pointer flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
                   style={{
                     background: '#290d05',
                     boxShadow:
                       '0 0 0 1px rgba(255,190,83,0.36), 0 20px 56px rgba(41,13,5,0.72), 0 0 58px rgba(249,146,47,0.56)',
                   }}
+                  onClick={(event) => onPeakClick(node.id, { x: event.clientX, y: event.clientY })}
                 >
                   <span className="text-sm font-extrabold uppercase tracking-[0.28em] text-[#ffbd53]">
                     Checkpoint {String(index + 1).padStart(2, '0')} /{' '}
@@ -554,7 +621,7 @@ function Signposts({
               ) : (
                 <button
                   type="button"
-                  onClick={() => onPeakClick(node.id)}
+                  onClick={(event) => onPeakClick(node.id, { x: event.clientX, y: event.clientY })}
                   className="pointer-events-auto h-3 w-3 rounded-full border border-[rgba(255,189,83,0.5)] bg-[rgba(255,189,83,0.35)]"
                   aria-label={peak.label}
                 />
@@ -628,7 +695,12 @@ function ProgressTrail({ activePeakId }: { activePeakId: string | null }) {
    Scene root
 ───────────────────────────────────────────── */
 
-export function Scene3D({ onPeakClick, activePeakId, onActivePeakChange }: Scene3DProps) {
+export function Scene3D({
+  onPeakClick,
+  activePeakId,
+  onActivePeakChange,
+  zoomPeakId,
+}: Scene3DProps) {
   const progressRef = useJourneyProgress();
 
   return (
@@ -678,7 +750,11 @@ export function Scene3D({ onPeakClick, activePeakId, onActivePeakChange }: Scene
         <directionalLight position={[-7, 11, -5]} intensity={1.18} color="#ffbd53" />
         <directionalLight position={[6, 5, -10]} intensity={0.32} color="#d9471d" />
 
-        <ChaseCamera progressRef={progressRef} onActivePeakChange={onActivePeakChange} />
+        <ChaseCamera
+          progressRef={progressRef}
+          onActivePeakChange={onActivePeakChange}
+          zoomPeakId={zoomPeakId}
+        />
         <SceneGround />
         <Sun />
         <DistantRidges />
