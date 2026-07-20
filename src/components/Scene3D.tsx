@@ -112,24 +112,20 @@ function ChaseCamera({
     // it look like the mountain is "zooming in," not just the DOM card. ──
     if (zoomPeakId) {
       const node = PATH_NODES.find((n) => n.id === zoomPeakId);
-
       if (node) {
         const sideSign = Math.sign(node.x) || 1;
         const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
 
-        // Only the clicked view is tighter.
-        // The normal scroll camera remains untouched.
         const targetX = apexX;
-        const targetY = MOUNTAIN_HEIGHT * 0.78;
-        const targetZ = node.z - MOUNTAIN_RADIUS * 0.45;
+        const targetY = MOUNTAIN_HEIGHT * 0.5;
+        const targetZ = node.z - MOUNTAIN_RADIUS * 0.85;
 
         camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.07);
         camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.07);
         camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.07);
 
-        camera.lookAt(apexX, MOUNTAIN_HEIGHT * 0.92, node.z);
+        camera.lookAt(apexX, MOUNTAIN_HEIGHT * 0.68, node.z);
       }
-
       return;
     }
 
