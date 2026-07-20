@@ -134,7 +134,7 @@ function ChaseCamera({
     const uAhead = THREE.MathUtils.clamp(u + 0.05, 0, 1);
 
     JOURNEY_CURVE.getPointAt(u, tmpPos);
-    JOURNEY_CURVE.getPointAt(uAhead, tmpLookAhead);
+    JOURNEY_CURVE.getPointAt(uAhead, tmpLookAhead); 
 
     const targetX = tmpPos.x;
     const targetY = tmpPos.y + 4.4;
@@ -402,57 +402,6 @@ function RidgeMountain({
   );
 }
 
-/* ─────────────────────────────────────────────
-   Sun — stays locked in the sky relative to the
-   camera, unaffected by fog, with a warm halo.
-───────────────────────────────────────────── */
-
-function Sun() {
-  const groupRef = useRef<THREE.Group>(null);
-  const { camera } = useThree();
-
-  useFrame(() => {
-    if (!groupRef.current) return;
-    groupRef.current.position.set(
-      camera.position.x - 17,
-      camera.position.y + 9.2,
-      camera.position.z + 54
-    );
-  });
-
-  return (
-    <group ref={groupRef}>
-      <mesh>
-        <sphereGeometry args={[4.5, 40, 28]} />
-        <meshBasicMaterial color="#ffbd53" fog={false} transparent opacity={0.28} />
-      </mesh>
-      {[6.8, 9.5, 13].map((r, i) => (
-        <mesh key={r}>
-          <sphereGeometry args={[r, 40, 28]} />
-          <meshBasicMaterial
-            color="#ff8a2a"
-            transparent
-            opacity={0.08 - i * 0.02}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            fog={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Scene Ground — anchors 3D mountains into the
-   background image so they do not look like they
-   are floating above the desert. ONE plane with a
-   true per-vertex alpha gradient: same two colors
-   as before (#f27a1e near center, #d94a12 further
-   out), smoothly fading to fully transparent at the
-   edges — no hard rectangular boundary, no stacked
-   opacity jump between two separate planes.
-───────────────────────────────────────────── */
 
 function SceneGround() {
   const geometry = useMemo(() => {
@@ -752,7 +701,6 @@ export function Scene3D({
           zoomPeakId={zoomPeakId}
         />
         <SceneGround />
-        <Sun />
         <DistantRidges />
         {/* <Trail /> */}
         <Mountains onPeakClick={onPeakClick} />

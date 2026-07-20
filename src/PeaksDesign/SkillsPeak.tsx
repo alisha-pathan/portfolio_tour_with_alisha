@@ -8,15 +8,8 @@ interface Props {
 export function SkillsPeak({ skills }: Props) {
   return (
     <div className="flex flex-col items-center ">
-      <h2 className="mb-2 font-display text-5xl font-bold text-[#fff0c7]">
-        Skills Peak
-      </h2>
 
-      <p className="mb-12 uppercase tracking-[0.3em] text-[#ffbd53]">
-        Hidden Treasure Camp
-      </p>
-
-      <div className="grid grid-cols-3 gap-10">
+      <div className="grid w-full grid-cols-3 gap-6 sm:gap-8">
         {skills.map((skill) => (
           <div
             key={skill.name}
@@ -24,7 +17,7 @@ export function SkillsPeak({ skills }: Props) {
           >
             <img
               src={treasureChest}
-              className="w-20 transition duration-300 group-hover:scale-110"
+              className="w-16 transition duration-300 group-hover:scale-110"
               alt={skill.name}
             />
 

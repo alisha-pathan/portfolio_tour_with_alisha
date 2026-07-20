@@ -37,6 +37,7 @@ function App() {
   const [nearPeakId, setNearPeakId] = useState<string | null>(null);
 
   const lenisRef = useRef<Lenis | null>(null);
+  const scrollLockY = useRef(0);
   const { scrollYProgress } = useScroll();
 
   /* ── Lenis Smooth Scroll ───────────────────── */
@@ -70,10 +71,27 @@ function App() {
     setSelectedPeakId(id);
     setZoomOrigin(origin ?? null);
     lenisRef.current?.stop();
+
+    // Hard-lock the outer scroll: body becomes fixed at its current
+    // position, so nothing — wheel, touch, keyboard, scrollbar drag —
+    // can move the outer journey while a peak page is open.
+    scrollLockY.current = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollLockY.current}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
   }, []);
 
   const handleDialogClose = useCallback(() => {
     setSelectedPeakId(null);
+
+    // Release the lock and snap back to exactly where the journey was left.
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    window.scrollTo(0, scrollLockY.current);
+
     lenisRef.current?.start();
   }, []);
 

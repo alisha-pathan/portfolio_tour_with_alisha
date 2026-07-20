@@ -67,7 +67,11 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
           transition={{ type: 'spring', stiffness: 165, damping: 24, mass: 0.95 }}
         >
           {/* ── Left — compact, no card, just floating text ── */}
-          <div className="pointer-events-auto flex w-full shrink-0 flex-col justify-center gap-8 p-6 md:h-full md:w-[300px] md:p-10">
+          <div
+            data-lenis-prevent
+            style={{ overscrollBehavior: 'contain' }}
+            className="pointer-events-auto flex w-full flex-1 items-start justify-start overflow-y-auto md:h-full md:p-10"
+          >
             <button
               type="button"
               onClick={onClose}
@@ -78,32 +82,15 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
               <span className="text-base leading-none">←</span>
               Back
             </button>
-
-            <div>
-              <span
-                className="text-xs font-extrabold uppercase tracking-[0.24em] text-[#ffbd53]"
-                style={{ textShadow }}
-              >
-                Checkpoint {String(index + 1).padStart(2, '0')} / {String(peakIds.length).padStart(2, '0')}
-              </span>
-              <h1
-                className="font-display mt-2 text-4xl font-extrabold leading-[1.02] text-[#fff0c7] md:text-5xl"
-                style={{ textShadow }}
-              >
-                {peak.label}
-              </h1>
-              <p
-                className="mt-3 text-xs font-bold uppercase tracking-[0.2em] text-[#f6d4a0]"
-                style={{ textShadow }}
-              >
-                {peak.subtitle}
-              </p>
-            </div>
           </div>
 
           {/* ── Right — the entire remaining width, content floats free ── */}
-          <div className="pointer-events-auto flex w-full flex-1 items-center justify-center overflow-y-auto p-6 md:h-full md:p-10">
-            <div className="w-full max-w-[1100px]" style={{ textShadow }}>
+          <div
+            data-lenis-prevent
+            style={{ overscrollBehavior: 'contain' }}
+            className="pointer-events-auto flex w-full flex-1 items-start justify-center overflow-y-auto p-6 md:h-full md:p-10"
+          >
+            <div className="w-full max-w-[1100px] py-6" style={{ textShadow }}>
               <PeakContent peak={peak} />
             </div>
           </div>
@@ -134,7 +121,11 @@ function PeakContent({ peak }: { peak: Peak }) {
   }
 
   if (content.type === 'skills') {
-    return <SkillsPeak skills={content.skills} />;
+    return (
+      <div className='py-6'>
+        <SkillsPeak skills={content.skills} />
+      </div>
+    );
   }
 
   if (content.type === 'experience') {
