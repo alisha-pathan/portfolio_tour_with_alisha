@@ -7,8 +7,9 @@
  */
 
 import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
-
-import eagleWings from '../assets/images/eagle-back.png';
+import eagleGif from "../assets/gif/eaglegif.gif";
+import eagleWings from '../assets/images/eagleimg.png';
+// import eagleWings from '../assets/images/eagle-back.png';
 
 /**
  * Lane rhythm — mirrors the journey path.
@@ -58,6 +59,25 @@ export function EagleOverlay({ hasScrolled }: EagleOverlayProps) {
           className="h-full w-full select-none object-contain"
         />
       </motion.div>
+
+        {/* <motion.div
+        className="eagle-flap absolute top-[58%] flex aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center"
+        style={{
+          left: eagleLeft,
+          rotate: springRotate,
+          opacity: eagleOpacity,
+          width: 'clamp(120px, 15vw, 220px)',
+          mixBlendMode: 'multiply',
+        }}
+      >
+        <img
+          src={eagleGif}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className=""
+        />
+      </motion.div> */}
 
       {/* Awakening glow ring — visible before first scroll */}
       {!hasScrolled && (
