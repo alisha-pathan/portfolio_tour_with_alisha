@@ -118,13 +118,19 @@ function ChaseCamera({
 
         const targetX = apexX;
         const targetY = MOUNTAIN_HEIGHT * 0.5;
-        const targetZ = node.z - MOUNTAIN_RADIUS * 0.85;
+        // Pulled back slightly (0.85 -> 1.05) so there's more room in
+        // frame for the sideways offset below without clipping the peak.
+        const targetZ = node.z - MOUNTAIN_RADIUS * 1.05;
 
         camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.07);
         camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.07);
         camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.07);
 
-        camera.lookAt(apexX, MOUNTAIN_HEIGHT * 0.68, node.z);
+        // Aim right of the mountain's true center — this is what pushes
+        // it to render on the LEFT side of the screen (raising this
+        // number moves it further left/outer; lowering brings it back
+        // toward center; past ~4 it'll clip out of frame again).
+        camera.lookAt(apexX - 4.8, MOUNTAIN_HEIGHT * 0.48, node.z);
       }
       return;
     }
@@ -134,7 +140,7 @@ function ChaseCamera({
     const uAhead = THREE.MathUtils.clamp(u + 0.05, 0, 1);
 
     JOURNEY_CURVE.getPointAt(u, tmpPos);
-    JOURNEY_CURVE.getPointAt(uAhead, tmpLookAhead); 
+    JOURNEY_CURVE.getPointAt(uAhead, tmpLookAhead);
 
     const targetX = tmpPos.x;
     const targetY = tmpPos.y + 4.4;
@@ -483,9 +489,11 @@ const CARD_Y = MOUNTAIN_HEIGHT + 1.5;
 function Signposts({
   onPeakClick,
   activePeakId,
+  zoomPeakId,
 }: {
   onPeakClick: (id: string, origin?: { x: number; y: number }) => void;
   activePeakId: string | null;
+  zoomPeakId: string | null;
 }) {
   const peakNodes = useMemo(
     () => PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end'),
@@ -503,6 +511,7 @@ function Signposts({
         // card sits directly above the peak it belongs to.
         const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
         const isActive = activePeakId === node.id;
+        const isZoomed = zoomPeakId === node.id;
 
         return (
           <group key={node.id} position={[apexX, -1.15, node.z]}>
@@ -510,7 +519,8 @@ function Signposts({
             {isActive && (
               <>
                 <mesh position={[0, (SUMMIT_TOP + CARD_Y) / 2 - 0.35, 0]}>
-                  <cylinderGeometry args={[0.035, 0.01, CARD_Y - SUMMIT_TOP - 0.55, 8, 1, true]} />
+                  {/* <cylinderGeometry args={[0.035, 0.01, CARD_Y - SUMMIT_TOP - 0.55, 8, 1, true]} /> */}
+                  <cylinderGeometry args={[0.015, 0.01, CARD_Y - SUMMIT_TOP - 0.5, 8, 1, true]} />
                   <meshBasicMaterial
                     color="#ffd27a"
                     transparent
@@ -526,9 +536,14 @@ function Signposts({
                 </mesh>
               </>
             )}
-
             <Html
-              position={[0, isActive ? CARD_Y : SUMMIT_TOP, 0]}
+              position={[
+                0,
+                isActive
+                  ? (isZoomed ? CARD_Y - 0.5 : CARD_Y)
+                  : SUMMIT_TOP,
+                0,
+              ]}
               center
               distanceFactor={isActive ? 4.2 : 9}
               occlude={false}
@@ -536,9 +551,11 @@ function Signposts({
               {isActive ? (
                 <button
                   type="button"
-                  className="checkpoint-pop pointer-events-auto flex min-w-[620px] max-w-[720px] cursor-pointer flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
+                  className="checkpoint-pop pointer-events-auto flex min-w-[640px] max-w-[720px] cursor-pointer flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
                   style={{
                     background: '#290d05',
+                    transform: isZoomed ? 'scale(0.65)' : 'scale(1)',
+                    transformOrigin: 'center center',
                     boxShadow:
                       '0 0 0 1px rgba(255,190,83,0.36), 0 20px 56px rgba(41,13,5,0.72), 0 0 58px rgba(249,146,47,0.56)',
                   }}
@@ -704,7 +721,11 @@ export function Scene3D({
         <DistantRidges />
         {/* <Trail /> */}
         <Mountains onPeakClick={onPeakClick} />
-        <Signposts onPeakClick={onPeakClick} activePeakId={activePeakId} />
+        <Signposts
+          onPeakClick={onPeakClick}
+          activePeakId={activePeakId}
+          zoomPeakId={zoomPeakId}
+        />
       </Canvas>
 
       {/* Plain DOM overlay — outside the Canvas, so it's cheap to
