@@ -35,7 +35,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useScroll, useSpring, useMotionValueEvent } from 'framer-motion';
 import * as THREE from 'three';
-
 import { JOURNEY_CURVE, PATH_NODES, getActivePeakId } from '../three/path';
 import { PEAKS } from '../data/portfolioPeaks';
 import desertBg from '../assets/images/desert-bg.png';

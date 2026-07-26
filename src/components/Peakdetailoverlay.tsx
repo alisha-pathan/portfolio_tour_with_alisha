@@ -22,6 +22,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PEAKS, type Peak, type Project } from '../data/portfolioPeaks';
 import { PATH_NODES } from '../three/path';
 import { SkillsPeak } from '../PeaksDesign/SkillsPeak';
+import coconutTree from "../assets/my_assets/Coconut_Tree.png"
+import Coins1 from "../assets/my_assets/coins_1.png"
+import tresureBox from "../assets/my_assets/tresure_box.png"
 
 export interface ZoomOrigin {
   x: number;
@@ -83,6 +86,99 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
               Back
             </button>
           </div>
+
+
+          {peak.content.type === 'skills' && (
+            <div>
+              <img
+                src={coconutTree}
+                alt=""
+                draggable={false}
+                className="
+              pointer-events-none
+              fixed
+              left-0
+              bottom-0
+              w-[300px]
+              lg:w-[460px]
+              xl:w-[350px]
+              select-none
+              z-[5]
+            "
+              />
+
+           
+
+              <img
+                src={tresureBox}
+                alt=""
+                draggable={false}
+                className="
+              pointer-events-none
+              fixed
+              right-10
+              -bottom-10
+              w-[300px]
+              lg:w-[400px]
+              xl:w-[300px]
+              select-none
+              z-[5]
+            "
+              />
+
+              <img
+                src={Coins1}
+                alt=""
+                draggable={false}
+                className="
+              pointer-events-none
+              fixed
+              right-0
+              -bottom-5
+              w-[300px]
+              lg:w-[460px]
+              xl:w-[250px]
+              select-none
+              z-[1]
+            "
+              />
+
+               <img
+                src={Coins1}
+                alt=""
+                draggable={false}
+                className="
+              pointer-events-none
+              fixed
+              right-20
+              bottom-16
+              w-[300px]
+              lg:w-[300px]
+              xl:w-[200px]
+              select-none
+              z-[1]
+            "
+              />
+
+                <img
+                src={Coins1}
+                alt=""
+                draggable={false}
+                className="
+              pointer-events-none
+              fixed
+              right-32
+              bottom-20
+              w-[300px]
+              lg:w-[300px]
+              xl:w-[200px]
+              select-none
+              z-[1]
+            "
+              />
+
+            </div>
+          )}
 
           {/* ── Right — the entire remaining width, content floats free ── */}
           <div
