@@ -30,7 +30,7 @@ import potionBottle from "../assets/my_assets/potionBottle.png"
 import tresureBox from "../assets/my_assets/tresure_box.png"
 import CliffImg from "../assets/my_assets/cliffImg.png"
 import Cliff2Img from "../assets/my_assets/cliff3Img.png"
-import { SkillPeakDislay } from './skill-user-interface/SkillPeakDislay';
+import { SkillPeakDislay } from './user-interface/SkillPeakDislay';
 
 export interface ZoomOrigin {
   x: number;
@@ -102,7 +102,7 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
           <div
             data-lenis-prevent
             style={{ overscrollBehavior: 'contain' }}
-            className="pointer-events-auto flex w-full flex-1 items-start justify-center overflow-y-auto p-6 md:h-full md:p-10"
+            className="pointer-events-auto flex w-full flex-1 items-start justify-center overflow-y-auto overflow-x-hidden p-6 md:h-full md:p-10"
           >
             <div className="w-full max-w-[1100px] py-6" style={{ textShadow }}>
               <PeakContent peak={peak} />
@@ -136,7 +136,7 @@ function PeakContent({ peak }: { peak: Peak }) {
 
   if (content.type === 'skills') {
     return (
-      <div className='py-6'>
+      <div className=''>
         <SkillsPeak skills={content.skills} />
       </div>
     );
