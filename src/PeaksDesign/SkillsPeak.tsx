@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 
 import treasureChest from '../assets/icons/treasure.png';
 import type { Skill } from '../data/portfolioPeaks';
@@ -43,6 +43,18 @@ const containerVariants: Variants = {
   },
 };
 
+// Stage 5 (instant): Same stagger, NO delay — used for filter switches
+const containerVariantsInstant: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0, // No delay when switching categories
+    },
+  },
+};
+
 // Stage 5: Individual skill cards pop/flip in
 const cardVariants: Variants = {
   hidden: {
@@ -68,6 +80,19 @@ export function SkillsPeak({ skills }: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+
+  // Track whether this is the initial mount or a filter switch
+  const isFirstRender = useRef(true);
+  const [useInstant, setUseInstant] = useState(false);
+
+  // When category changes after first render, switch to instant animation
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    } else {
+      setUseInstant(true);
+    }
+  }, [selectedCategory]);
 
   // Extract unique categories
   const categories = useMemo(() => {
@@ -107,9 +132,8 @@ export function SkillsPeak({ skills }: Props) {
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`relative rounded-lg px-3 text-xs font-semibold tracking-wide transition-colors ${
-                  isActive ? 'text-[#0e0804]' : 'text-[#ffd27a]/70 hover:text-[#ffd27a]'
-                }`}
+                className={`relative rounded-lg px-3 text-xs font-semibold tracking-wide transition-colors ${isActive ? 'text-[#0e0804]' : 'text-[#ffd27a]/70 hover:text-[#ffd27a]'
+                  }`}
               >
                 {isActive && (
                   <motion.div
@@ -128,7 +152,7 @@ export function SkillsPeak({ skills }: Props) {
       {/* Skills Grid with Animated Stagger (Stage 5) */}
       <motion.div
         key={selectedCategory}
-        variants={containerVariants}
+        variants={useInstant ? containerVariantsInstant : containerVariants}
         initial="hidden"
         animate="visible"
         className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3.5 mt-4"
@@ -167,10 +191,9 @@ export function SkillsPeak({ skills }: Props) {
                     transition-all duration-300 ease-out overflow-hidden
                     bg-gradient-to-b from-[#1a1208] via-[#2a1a0a] to-[#0d0805]
                     border backdrop-blur-md
-                    ${
-                      isHovered
-                        ? 'border-[#f5a623] shadow-xl shadow-[#f5a623]/30'
-                        : 'border-[#f5a623]/30 hover:border-[#f5a623]/60 shadow-lg shadow-[#f5a623]/5'
+                    ${isHovered
+                      ? 'border-[#f5a623] shadow-xl shadow-[#f5a623]/30'
+                      : 'border-[#f5a623]/30 hover:border-[#f5a623]/60 shadow-lg shadow-[#f5a623]/5'
                     }
                   `}
                 >
