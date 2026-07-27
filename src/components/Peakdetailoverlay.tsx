@@ -15,6 +15,22 @@
  * a fixed 440px column to flex-1 (the whole remaining width), since
  * per-peak designs (like the Skills Peak treasure-chest grid) need real
  * room, not a cramped sidebar.
+ *
+ * v4: Added map image display for Origin Peak on the left side
+ *
+ * v5: Moved map image to right side, removed shadow from map
+ *
+ * v6: Map image as background with text on top for Origin Peak
+ *
+ * v7: Brown text, no dark overlay, full image visible
+ *
+ * v8: Smaller text, larger image, justified alignment
+ *
+ * v9: Fixed text overflow and containment issues
+ *
+ * v10: Removed vertical scroll for Origin Peak
+ *
+ * v11: Separated OriginPeakDisplay into its own component
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -22,15 +38,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PEAKS, type Peak, type Project } from '../data/portfolioPeaks';
 import { PATH_NODES } from '../three/path';
 import { SkillsPeak } from '../PeaksDesign/SkillsPeak';
-import coconutTree from "../assets/my_assets/Coconut_Tree.png"
-import Coins1 from "../assets/my_assets/coins_1.png"
-import Coins3 from "../assets/my_assets/coins_3.png"
-import snakeAsset from "../assets/my_assets/snake_asset.png"
-import potionBottle from "../assets/my_assets/potionBottle.png"
-import tresureBox from "../assets/my_assets/tresure_box.png"
-import CliffImg from "../assets/my_assets/cliffImg.png"
-import Cliff2Img from "../assets/my_assets/cliff3Img.png"
 import { SkillPeakDislay } from './user-interface/SkillPeakDislay';
+import OriginPeakDisplay from './user-interface/OriginPeakDisplay';
 
 export interface ZoomOrigin {
   x: number;
@@ -57,6 +66,9 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
   const originX = origin?.x ?? window.innerWidth / 2;
   const originY = origin?.y ?? window.innerHeight / 2;
 
+  // Check if this is the origin peak
+  const isOriginPeak = peak?.id === 'origin';
+
   return (
     <AnimatePresence>
       {open && peak && (
@@ -75,11 +87,13 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
           exit={{ opacity: 0, scale: 0.035 }}
           transition={{ type: 'spring', stiffness: 165, damping: 24, mass: 0.95 }}
         >
-          {/* ── Left — compact, no card, just floating text ── */}
+          {/* ── Left — shows back button ── */}
           <div
             data-lenis-prevent
             style={{ overscrollBehavior: 'contain' }}
-            className="pointer-events-auto flex w-full flex-1 items-start justify-start overflow-y-auto md:h-full md:p-10"
+            className={`pointer-events-auto flex w-full flex-1 items-start justify-start ${
+              isOriginPeak ? 'overflow-visible' : 'overflow-y-auto'
+            } md:h-full md:p-10`}
           >
             <button
               type="button"
@@ -93,16 +107,18 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
             </button>
           </div>
 
-
+          {/* Skills peak content - displayed separately */}
           {peak.content.type === 'skills' && (
             <SkillPeakDislay />
           )}
 
-          {/* ── Right — the entire remaining width, content floats free ── */}
+          {/* ── Right — content area ── */}
           <div
             data-lenis-prevent
             style={{ overscrollBehavior: 'contain' }}
-            className="pointer-events-auto flex w-full flex-1 items-start justify-center overflow-y-auto overflow-x-hidden p-6 md:h-full md:p-10"
+            className={`pointer-events-auto flex w-full flex-1 items-start justify-center ${
+              isOriginPeak ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden'
+            } p-6 md:h-full md:p-10`}
           >
             <div className="w-full max-w-[1100px] py-6" style={{ textShadow }}>
               <PeakContent peak={peak} />
@@ -124,13 +140,11 @@ function PeakContent({ peak }: { peak: Peak }) {
 
   if (content.type === 'origin') {
     return (
-      <div>
-        <h3 className="mb-3 text-2xl font-bold text-[#ffd27a]">{content.title}</h3>
-        <p className="mb-6 border-l-4 border-[#ffd27a] pl-5 text-lg italic leading-8 text-[#f6d4a0]">
-          {content.tagline}
-        </p>
-        <p className="max-w-[640px] text-base leading-8 text-[#fff8ee] opacity-95">{content.bio}</p>
-      </div>
+      <OriginPeakDisplay 
+        title={content.title}
+        tagline={content.tagline}
+        bio={content.bio}
+      />
     );
   }
 
