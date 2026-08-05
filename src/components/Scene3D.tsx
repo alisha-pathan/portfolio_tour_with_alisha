@@ -125,11 +125,15 @@ function ChaseCamera({
         camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.07);
         camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.07);
 
-        // Aim right of the mountain's true center — this is what pushes
-        // it to render on the LEFT side of the screen (raising this
-        // number moves it further left/outer; lowering brings it back
-        // toward center; past ~4 it'll clip out of frame again).
-        camera.lookAt(apexX - 4.8, MOUNTAIN_HEIGHT * 0.48, node.z);
+        // Find node index among peaks to determine alternating zoom direction
+        const peakNodes = PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end');
+        const peakIndex = peakNodes.findIndex((n) => n.id === zoomPeakId);
+
+        // Even indices (0, 2, 4, 6) look right (+4.8) to render mountain on the LEFT.
+        // Odd indices (1, 3, 5) look left (-4.8) to render mountain on the RIGHT.
+        const lookOffset = peakIndex % 2 === 0 ? 4.8 : -4.8;
+
+        camera.lookAt(apexX + lookOffset, MOUNTAIN_HEIGHT * 0.48, node.z);
       }
       return;
     }
@@ -508,9 +512,14 @@ function Signposts({
         const sideSign = Math.sign(node.x) || 1;
         // Same position as the mountain's own apex in Mountains — the
         // card sits directly above the peak it belongs to.
-        const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
-        const isActive = activePeakId === node.id;
+     const isActive = activePeakId === node.id;
         const isZoomed = zoomPeakId === node.id;
+
+        // Zoomed into this exact peak — its own signpost has no reason
+        // to still be visible, hide it entirely instead of shrinking it.
+        if (isZoomed) return null;
+
+        const apexX = node.x + sideSign * MOUNTAIN_OFFSET;
 
         return (
           <group key={node.id} position={[apexX, -1.15, node.z]}>
@@ -536,13 +545,7 @@ function Signposts({
               </>
             )}
             <Html
-              position={[
-                0,
-                isActive
-                  ? (isZoomed ? CARD_Y - 0.5 : CARD_Y)
-                  : SUMMIT_TOP,
-                0,
-              ]}
+              position={[0, isActive ? CARD_Y : SUMMIT_TOP, 0]}
               center
               distanceFactor={isActive ? 4.2 : 9}
               occlude={false}
@@ -553,8 +556,6 @@ function Signposts({
                   className="checkpoint-pop pointer-events-auto flex min-w-[640px] max-w-[720px] cursor-pointer flex-col items-center gap-4 rounded-[2rem] border-2 border-[#ffd27a] px-12 py-9 text-center transition duration-200 hover:-translate-y-1"
                   style={{
                     background: '#290d05',
-                    transform: isZoomed ? 'scale(0.65)' : 'scale(1)',
-                    transformOrigin: 'center center',
                     boxShadow:
                       '0 0 0 1px rgba(255,190,83,0.36), 0 20px 56px rgba(41,13,5,0.72), 0 0 58px rgba(249,146,47,0.56)',
                   }}

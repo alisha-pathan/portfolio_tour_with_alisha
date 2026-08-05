@@ -45,7 +45,7 @@ export const SkillPeakDislay = () => {
     return (
         <div>
             <div>
-                {/* ---------------------------- CLIFFS (STAGE 2) ---------------------------- */}
+                {/* ---------------------------- CLIFFS (STAGE 2) - SWAPPED TO RIGHT SIDE ---------------------------- */}
 
                 <motion.img
                     src={CliffImg}
@@ -58,13 +58,13 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              -left-20
+              -right-20
               -bottom-24
               w-[800px]
               lg:w-[600px]
               xl:w-[600px]
               select-none
-              rotate-12
+              -rotate-12
               z-[5]
             "
                 />
@@ -80,7 +80,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              -left-20
+              -right-20
               -bottom-16
               w-[800px]
               lg:w-[600px]
@@ -101,11 +101,11 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              -left-14
+              -right-14
               -bottom-20
               w-[800px]
               lg:w-[600px]
-              rotate-12
+              -rotate-12
               xl:w-[600px]
               select-none
               z-[4]
@@ -123,11 +123,11 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              left-8
+              right-8
               -bottom-28
               w-[800px]
               lg:w-[600px]
-              rotate-12
+              -rotate-12
               xl:w-[600px]
               select-none
               z-[4]
@@ -145,18 +145,18 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              left-40
+              right-40
               -bottom-48
               w-[800px]
               lg:w-[600px]
-              rotate-12
+              -rotate-12
               xl:w-[600px]
               select-none
               z-[4]
             "
                 />
 
-                {/* ---------------------------- TREASURE & ITEMS (STAGE 3) ---------------------------- */}
+                {/* ---------------------------- TREASURE & ITEMS (STAGE 3) - SWAPPED TO LEFT SIDE ---------------------------- */}
 
                 {/* Treasure box: pop in + bounce at t=0.90s, then idle sway */}
                 <motion.img
@@ -179,7 +179,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-10
+              left-10
               -bottom-10
               w-[300px]
               lg:w-[400px]
@@ -197,12 +197,12 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-0
+              left-0
               -bottom-3
               w-[300px]
               lg:w-[460px]
               xl:w-[250px]
-              rotate-12
+              -rotate-12
               select-none
               z-[1]
             "
@@ -216,13 +216,13 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-28
+              left-28
               bottom-8
               w-[300px]
               lg:w-[460px]
               xl:w-[250px]
               select-none
-              rotate-12
+              -rotate-12
               z-[1]
             "
                 />
@@ -235,7 +235,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-32
+              left-32
                -bottom-20
               w-[300px]
               lg:w-[300px]
@@ -253,7 +253,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-0
+              left-0
                -bottom-20
               w-[300px]
               lg:w-[300px]
@@ -271,7 +271,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-32
+              left-32
               bottom-20
               w-[300px]
               lg:w-[300px]
@@ -302,7 +302,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-80
+              left-80
               bottom-10
               w-[50px]
               lg:w-[60px]
@@ -320,12 +320,12 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-60
+              left-60
               -bottom-20
               w-[300px]
               lg:w-[460px]
               xl:w-[250px]
-              rotate-12
+              -rotate-12
               select-none
               z-[1]
             "
@@ -339,12 +339,12 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-60
+              left-60
               bottom-20
               w-[250px]
               lg:w-[250px]
               xl:w-[150px]
-              rotate-12
+              -rotate-12
               select-none
               z-[1]
             "
@@ -369,7 +369,7 @@ export const SkillPeakDislay = () => {
                     className="
               pointer-events-none
               fixed
-              right-0
+              left-0
               bottom-0
               w-[250px]
               lg:w-[250px]
@@ -385,4 +385,3 @@ export const SkillPeakDislay = () => {
         </div>
     )
 }
-

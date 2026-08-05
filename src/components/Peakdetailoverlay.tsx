@@ -68,30 +68,36 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
 
   // Check if this is the origin peak
   const isOriginPeak = peak?.id === 'origin';
+  const isRightZoom = index >= 0 && index % 2 === 1;
 
   return (
     <AnimatePresence>
       {open && peak && (
         <motion.div
           key={peak.id}
-          className="fixed inset-0 z-[1000] flex flex-col md:flex-row"
+          className={`fixed inset-0 z-[1000] flex flex-col ${
+            isRightZoom ? 'md:flex-row-reverse' : 'md:flex-row'
+          }`}
           style={{
             transformOrigin: `${originX}px ${originY}px`,
             // Only a soft edge vignette — center stays fully transparent
             // so the zoomed mountain is always visible behind the content.
-            background:
-              'linear-gradient(to right, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)',
+            background: isRightZoom
+              ? 'linear-gradient(to left, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)'
+              : 'linear-gradient(to right, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)',
           }}
           initial={{ opacity: 0, scale: 0.035 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.035 }}
           transition={{ type: 'spring', stiffness: 165, damping: 24, mass: 0.95 }}
         >
-          {/* ── Left — shows back button ── */}
+          {/* ── Shows back button ── */}
           <div
             data-lenis-prevent
             style={{ overscrollBehavior: 'contain' }}
-            className={`pointer-events-auto flex w-full flex-1 items-start justify-start ${
+            className={`pointer-events-auto flex w-full flex-1 items-start ${
+              isRightZoom ? 'justify-end' : 'justify-start'
+            } ${
               isOriginPeak ? 'overflow-visible' : 'overflow-y-auto'
             } md:h-full md:p-10`}
           >
@@ -102,7 +108,7 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
               className="flex w-fit items-center gap-2 rounded-full border border-[rgba(255,210,122,0.4)] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#fff0c7] backdrop-blur-sm transition hover:border-[#ffd27a] hover:bg-[rgba(255,210,122,0.12)]"
               style={{ textShadow }}
             >
-              <span className="text-base leading-none">←</span>
+              <span className="text-base leading-none">{isRightZoom ? '→' : '←'}</span>
               Back
             </button>
           </div>
