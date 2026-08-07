@@ -13,7 +13,8 @@ import arrow4 from "../../assets/my_assets/Arrow4.png";
 import arrow5 from "../../assets/my_assets/Arrow5.png"
 import { createPortal } from 'react-dom';
 
-const ARROW_IMAGES = [arrow4, arrow5];
+const FULL_ARROW_IMAGES = [arrow2, arrow3]; // used mid-flight
+const HALF_ARROW_IMAGES = [arrow4, arrow5];
 
 
 // ─────────────────────────────────────────────
@@ -59,13 +60,44 @@ const OriginPeakDisplay = ({ title, tagline, bio }: OriginPeakDisplayProps) => {
     const slotWidth = 100 / ARROW_COUNT;
     return Array.from({ length: ARROW_COUNT }, (_, i) => ({
       id: i,
-      image: ARROW_IMAGES[i % ARROW_IMAGES.length],
+      fullImage: FULL_ARROW_IMAGES[i % 2],
+      halfImage: HALF_ARROW_IMAGES[i % 2],
       left: i * slotWidth + seededRandom(i * 1.13) * slotWidth,
       rotate: -24 + seededRandom(i * 2.71) * 48,
       scale: 0.75 + seededRandom(i * 3.59) * 0.6,
       sink: -18 + seededRandom(i * 4.87) * 22,
+      // Volley trajectory — one consistent shot direction (upper-right
+      // to lower-left), not random-per-arrow, is what makes this read
+      // as coordinated enemy fire instead of scattered rain.
+      flightRotate: 14 + seededRandom(i * 5.31) * 22,
+      flightDx: -230 + seededRandom(i * 6.47) * 60 - 30,
+      delay: Math.floor(seededRandom(i * 7.19) * 550),
+      duration: 260 + Math.floor(seededRandom(i * 8.71) * 160),
     }));
   }, []);
+
+  // Per-arrow @keyframes — unique names per id since each has a
+  // different trajectory/timing. Generated once, injected as raw CSS.
+  const arrowKeyframes = useMemo(
+    () =>
+      groundArrows
+        .map(
+          (a) => `
+      @keyframes arrowFly-${a.id} {
+        0% { transform: translateX(-50%) translate(${a.flightDx}px, -130vh) rotate(${a.flightRotate}deg) scale(${a.scale * 0.9}); opacity: 0; }
+        6% { opacity: 1; }
+        88% { transform: translateX(-50%) translate(${a.flightDx * 0.04}px, ${a.sink}px) rotate(${a.rotate}deg) scale(${a.scale}); opacity: 1; }
+        100% { transform: translateX(-50%) translate(0px, ${a.sink}px) rotate(${a.rotate}deg) scale(${a.scale}); opacity: 0; }
+      }
+      @keyframes arrowLand-${a.id} {
+        0%, 96% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+    `
+        )
+        .join(''),
+    [groundArrows]
+  );
   // ── Helpers ────────────────────────────────────
 
   useEffect(() => {
@@ -139,31 +171,60 @@ const OriginPeakDisplay = ({ title, tagline, bio }: OriginPeakDisplayProps) => {
   // ── Render ────────────────────────────────────
   return (
     <div className="relative w-full">
-      {/* ── Battlefield arrows stuck in the ground — full viewport
-           width, fixed to the bottom edge of the screen regardless of
-           where this component sits in the page. Purely decorative. ── */}
       {createPortal(
-        <div
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-[998] h-44 overflow-hidden"
-          aria-hidden="true"
-        >
-          {groundArrows.map((a) => (
-            <img
-              key={a.id}
-              src={a.image}
-              alt=""
-              className="absolute select-none"
-              style={{
-                left: `${a.left}%`,
-                bottom: `${a.sink}px`,
-                width: '300px',
-                transform: `translateX(-50%) rotate(${a.rotate}deg) scale(${a.scale})`,
-                transformOrigin: 'bottom center',
-                filter: 'drop-shadow(0 5px 5px rgba(0,0,0,0.4))',
-              }}
-            />
-          ))}
-        </div>,
+        <>
+          <style>{arrowKeyframes}</style>
+
+          {/* Flying full arrows — the incoming volley */}
+          <div
+            className="pointer-events-none fixed inset-x-0 bottom-0 z-[999] h-full overflow-hidden"
+            aria-hidden="true"
+          >
+            {groundArrows.map((a) => (
+              <img
+                key={`fly-${a.id}`}
+                src={a.fullImage}
+                alt=""
+                className="absolute select-none"
+                style={{
+                  left: `${a.left}%`,
+                  bottom: 0,
+                  width: '280px',
+                  transformOrigin: 'bottom center',
+                  filter: 'drop-shadow(0 5px 5px rgba(0,0,0,0.4)) blur(0.4px)',
+                  animation: `arrowFly-${a.id} ${a.duration}ms ${a.delay}ms cubic-bezier(0.16,0.84,0.44,1) forwards`,
+                  opacity: 0,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Landed half arrows — your approved size/position, now timed
+              to appear right as each flying arrow strikes */}
+          <div
+            className="pointer-events-none fixed inset-x-0 bottom-0 z-[998] h-44 overflow-hidden"
+            aria-hidden="true"
+          >
+            {groundArrows.map((a) => (
+              <img
+                key={`land-${a.id}`}
+                src={a.halfImage}
+                alt=""
+                className="absolute select-none"
+                style={{
+                  left: `${a.left}%`,
+                  bottom: `${a.sink}px`,
+                  width: '290px',
+                  transform: `translateX(-50%) rotate(${a.rotate}deg) scale(${a.scale})`,
+                  transformOrigin: 'bottom center',
+                  filter: 'drop-shadow(0 5px 5px rgba(0,0,0,0.4))',
+                  animation: `arrowLand-${a.id} ${a.duration}ms ${a.delay}ms linear forwards`,
+                  opacity: 0,
+                }}
+              />
+            ))}
+          </div>
+        </>,
         document.body
       )}
 
