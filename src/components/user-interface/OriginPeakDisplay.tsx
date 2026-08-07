@@ -11,7 +11,10 @@ import arrow2 from "../../assets/my_assets/Arrow2.png";
 import arrow3 from "../../assets/my_assets/Arrow3.png";
 import arrow4 from "../../assets/my_assets/Arrow4.png";
 import arrow5 from "../../assets/my_assets/Arrow5.png"
+import map_close from "../../assets/my_assets/map_close.png"
+
 import { createPortal } from 'react-dom';
+import { motion } from "framer-motion";
 
 const FULL_ARROW_IMAGES = [arrow2, arrow3]; // used mid-flight
 const HALF_ARROW_IMAGES = [arrow4, arrow5];
@@ -228,9 +231,26 @@ const OriginPeakDisplay = ({ title, tagline, bio }: OriginPeakDisplayProps) => {
         document.body
       )}
 
+      <motion.div
+        className="absolute w-[100px] top-40 -left-[490px]"
+        animate={{
+          y: [0, -25, 0, -15, 0],
+          rotate: [0, -8, 5, -5, 0],
+        }}
+        transition={{
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        <img src={map_close} alt="map_close" />
+      </motion.div>
+
+   
+
       {/* Container for Arab King */}
       <div
-        className="pointer-events-none absolute -left-[800px] -bottom-14 z-10 h-[90%] select-none"
+        className="pointer-events-none absolute -left-[800px] -bottom-10 z-10 h-[90%] select-none"
         style={{ perspective: '900px', perspectiveOrigin: '50% 55%', transformStyle: 'preserve-3d', overflow: 'visible' }}
       >
         <img src={arabKing} alt="Arab King" className="h-full object-contain"
