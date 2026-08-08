@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useScroll } from 'framer-motion';
+import { useScroll, useTransform, useSpring, motion } from 'framer-motion';
 import Lenis from 'lenis';
 
 import './index.css';
@@ -61,7 +61,11 @@ function App() {
   /* ── Eagle Awakening ───────────────────────── */
   useEffect(() => {
     return scrollYProgress.on('change', (value) => {
-      if (value > 0.01 && !hasScrolled) setHasScrolled(true);
+      if (value > 0.01 && !hasScrolled) {
+        setHasScrolled(true);
+      } else if (value <= 0.01 && hasScrolled) {
+        setHasScrolled(false);
+      }
     });
   }, [scrollYProgress, hasScrolled]);
 
@@ -72,25 +76,16 @@ function App() {
     setZoomOrigin(origin ?? null);
     lenisRef.current?.stop();
 
-    // Hard-lock the outer scroll: body becomes fixed at its current
-    // position, so nothing — wheel, touch, keyboard, scrollbar drag —
-    // can move the outer journey while a peak page is open.
-    scrollLockY.current = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollLockY.current}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
+    // Hard-lock the outer scroll: overflow hidden prevents the body from scrolling
+    // without resetting window.scrollY to 0 (which would break Framer Motion's useScroll).
+    document.body.style.overflow = 'hidden';
   }, []);
 
   const handleDialogClose = useCallback(() => {
     setSelectedPeakId(null);
 
-    // Release the lock and snap back to exactly where the journey was left.
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    window.scrollTo(0, scrollLockY.current);
+    // Release the lock
+    document.body.style.overflow = '';
 
     lenisRef.current?.start();
   }, []);
@@ -98,6 +93,12 @@ function App() {
   const handleBeginAscent = useCallback(() => {
     lenisRef.current?.scrollTo(window.innerHeight * 0.75, {
       duration: 1.8,
+    });
+  }, []);
+
+  const handleReturnToOrigin = useCallback(() => {
+    lenisRef.current?.scrollTo(0, {
+      duration: 2.5,
     });
   }, []);
 
@@ -114,7 +115,11 @@ function App() {
 
       {/* NEW: pointer-events-none — this was the actual bug. See header comment. */}
       <main id="main-content" className="pointer-events-none relative z-10 h-[900vh]">
-        <HeroSection onBeginAscent={handleBeginAscent} hasScrolled={hasScrolled} />
+        <HeroSection 
+          onBeginAscent={handleBeginAscent} 
+          onReturnToOrigin={handleReturnToOrigin} 
+          hasScrolled={hasScrolled} 
+        />
       </main>
 
       <PeakDetailOverlay

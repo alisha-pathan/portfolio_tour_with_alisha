@@ -238,9 +238,9 @@ function createMountainGeometry(
   return geometry;
 }
 
-// Warm Golden Desert Palette — locked, do not change.
-const FOREGROUND_PALETTE = { base: '#9f3918', mid: '#e26624', high: '#ffad45' };
-const RIDGE_PALETTE = { base: '#b84a1d', mid: '#ef7c28', high: '#ffc05f' };
+// Warm Golden Desert Palette — adjusted to match the lighter sand mountain look.
+const FOREGROUND_PALETTE = { base: '#c25816', mid: '#e07a2a', high: '#f59a45' };
+const RIDGE_PALETTE = { base: '#d1621c', mid: '#e88735', high: '#fca856' };
 
 const MOUNTAIN_RADIUS = 6.8;
 const MOUNTAIN_HEIGHT = 3.65;
@@ -404,8 +404,6 @@ function RidgeMountain({
         metalness={0}
         flatShading
         fog
-        transparent
-        opacity={0.74}
       />
     </mesh>
   );
@@ -433,9 +431,9 @@ function SceneGround() {
       const dist = Math.sqrt(nx * nx + ny * ny);
       const t = THREE.MathUtils.clamp(dist, 0, 1);
 
-      // Fully opaque near the center, smoothly fading to fully
-      // transparent by the edge — the actual "graceful" part.
-      const alpha = 1 - THREE.MathUtils.smoothstep(dist, 0.32, 1);
+      // Make it solid for a much wider area so it feels like actual ground,
+      // only fading very close to the extreme edges to avoid hard rectangular lines.
+      const alpha = 1 - THREE.MathUtils.smoothstep(dist, 0.85, 1);
       const color = colorNear.clone().lerp(colorFar, t);
 
       colors.push(color.r, color.g, color.b, alpha);

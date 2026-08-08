@@ -7,39 +7,20 @@
  * panels. Left side is compact (checkpoint badge, title, subtitle, back
  * button); right side takes the entire remaining width for that peak's
  * actual content — no fixed narrow column boxing it in.
- *
- * v3: removed the dark glass-card backgrounds on both sides per feedback
- * ("game like vibe", not boxed UI) — only a soft edge vignette on the
- * outer container remains for contrast, and text itself carries a heavy
- * drop-shadow instead of sitting on a filled panel. Right side went from
- * a fixed 440px column to flex-1 (the whole remaining width), since
- * per-peak designs (like the Skills Peak treasure-chest grid) need real
- * room, not a cramped sidebar.
- *
- * v4: Added map image display for Origin Peak on the left side
- *
- * v5: Moved map image to right side, removed shadow from map
- *
- * v6: Map image as background with text on top for Origin Peak
- *
- * v7: Brown text, no dark overlay, full image visible
- *
- * v8: Smaller text, larger image, justified alignment
- *
- * v9: Fixed text overflow and containment issues
- *
- * v10: Removed vertical scroll for Origin Peak
- *
- * v11: Separated OriginPeakDisplay into its own component
+ * 
+ * v12: Experience peak is now centered while all other peaks maintain
+ * alternating left/right layout - OPTIMIZED VERSION
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
+import { memo, useMemo, useCallback } from 'react';
 
 import { PEAKS, type Peak, type Project } from '../data/portfolioPeaks';
 import { PATH_NODES } from '../three/path';
 import { SkillsPeak } from '../PeaksDesign/SkillsPeak';
 import { SkillPeakDislay } from './user-interface/SkillPeakDislay';
 import OriginPeakDisplay from './user-interface/OriginPeakDisplay';
+import ExperiencePeakDisplay from './user-interface/ExperiencePeakDisplay';
 
 export interface ZoomOrigin {
   x: number;
@@ -56,265 +37,317 @@ interface PeakDetailOverlayProps {
 // zoomed mountain/sky, without needing a solid card behind it.
 const textShadow = '0 2px 4px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.6)';
 
-export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlayProps) {
-  const peak = peakId ? PEAKS.find((p) => p.id === peakId) ?? null : null;
-  const open = !!peak;
+// Memoized Back Button component to prevent unnecessary re-renders
+const BackButton = memo(({ onClick, arrow, textShadow }: {
+  onClick: () => void;
+  arrow: string;
+  textShadow: string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label="Back to the journey"
+    className="flex w-fit items-center gap-2 rounded-full border border-[rgba(255,210,122,0.4)] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#fff0c7] backdrop-blur-sm transition hover:border-[#ffd27a] hover:bg-[rgba(255,210,122,0.12)]"
+    style={{ textShadow }}
+  >
+    <span className="text-base leading-none">{arrow}</span>
+    Back
+  </button>
+));
 
-  const peakIds = PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end').map((n) => n.id);
-  const index = peak ? peakIds.indexOf(peak.id) : -1;
+BackButton.displayName = 'BackButton';
+
+// Memoized Project Card
+const ProjectCard = memo(({ project }: { project: Project }) => (
+  <details className="rounded-xl border border-[rgba(255,210,122,0.3)] px-4 backdrop-blur-sm">
+    <summary className="flex cursor-pointer list-none items-center justify-between py-3.5 [&::-webkit-details-marker]:hidden">
+      <span className="text-sm font-bold text-[#fff8ee]">{project.title}</span>
+      <span className="text-lg text-[#ffd27a]">›</span>
+    </summary>
+
+    <div className="flex flex-col gap-3 border-t border-[rgba(255,210,122,0.2)] py-3.5">
+      <Section label="Problem"><p>{project.problem}</p></Section>
+      <Section label="My Role"><p>{project.role}</p></Section>
+      <Section label="Tech">
+        <div className="flex flex-wrap gap-1.5">
+          {project.tech.map((t) => (
+            <span
+              key={t}
+              className="rounded-md border border-[rgba(255,210,122,0.4)] px-2 py-0.5 text-xs font-semibold text-[#ffd27a]"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      </Section>
+      <Section label="Features">
+        <ul className="flex list-none flex-col gap-1 p-0">
+          {project.features.map((f) => (
+            <li key={f} className="relative pl-4 text-xs leading-5 text-[#fff8ee] opacity-90 before:absolute before:left-0 before:text-[#ffd27a] before:content-['›']">
+              {f}
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section label="Impact"><p className="font-semibold text-[#fff0c5]">{project.impact}</p></Section>
+    </div>
+  </details>
+));
+
+ProjectCard.displayName = 'ProjectCard';
+
+const Section = memo(({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex flex-col gap-1 text-xs leading-6 text-[#fff8ee] opacity-90">
+    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#ffd27a]">{label}</span>
+    {children}
+  </div>
+));
+
+Section.displayName = 'Section';
+
+/* ─────────────────────────────────────────────
+   Content renderer — memoized to prevent
+   unnecessary re-renders when peak changes
+───────────────────────────────────────────── */
+
+const PeakContent = memo(({ peak }: { peak: Peak }) => {
+  const { content } = peak;
+
+  // Use useMemo for expensive content types
+  const renderedContent = useMemo(() => {
+    switch (content.type) {
+      case 'origin':
+        return (
+          <OriginPeakDisplay
+            title={content.title}
+            tagline={content.tagline}
+            bio={content.bio}
+          />
+        );
+
+      case 'skills':
+        return (
+          <div className=''>
+            <SkillsPeak skills={content.skills} />
+          </div>
+        );
+
+      case 'experience':
+        return <ExperiencePeakDisplay roles={content.roles} />;
+
+      case 'projects':
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {content.projects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        );
+
+      case 'impact':
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {content.achievements.map((a) => (
+              <div key={a.title} className="flex items-start gap-4">
+                <div className="text-3xl">{a.icon}</div>
+                <div>
+                  <h4 className="mb-1 text-base font-bold text-[#fff8ee]">{a.title}</h4>
+                  <p className="text-sm leading-6 text-[#f6d4a0]">{a.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'resume':
+        return (
+          <div className="text-center">
+            <p className="mb-8 text-base leading-7 text-[#f6d4a0]">
+              Take a closer look at my full background.
+            </p>
+            <div className="mx-auto flex max-w-[320px] flex-col gap-3">
+              {content.links.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2.5 rounded-xl border border-[rgba(255,210,122,0.4)] px-6 py-4 text-sm font-bold text-[#ffd27a] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.14)]"
+                >
+                  <span>{link.icon}</span>
+                  <span>{link.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'contact':
+        return (
+          <div className="mx-auto max-w-[520px] text-center">
+            <p className="mb-8 text-lg italic leading-8 text-[#f6d4a0]">{content.message}</p>
+            <div className="flex flex-col gap-3">
+              <a
+                href={`mailto:${content.email}`}
+                className="rounded-xl border border-[rgba(255,210,122,0.5)] px-6 py-4 text-sm font-bold text-[#ffd27a] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.14)]"
+              >
+                ✉️ &nbsp; Send an Email
+              </a>
+              <a
+                href={content.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-[rgba(255,210,122,0.4)] px-6 py-4 text-sm font-bold text-[#fff8ee] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.1)]"
+              >
+                💼 &nbsp; Connect on LinkedIn
+              </a>
+              <a
+                href={content.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-[rgba(255,210,122,0.4)] px-6 py-4 text-sm font-bold text-[#fff8ee] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.1)]"
+              >
+                🐙 &nbsp; View GitHub
+              </a>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  }, [content]);
+
+  return renderedContent;
+});
+
+PeakContent.displayName = 'PeakContent';
+
+/* ─────────────────────────────────────────────
+   Main Component - Optimized
+───────────────────────────────────────────── */
+
+export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlayProps) {
+  // Memoize expensive calculations
+  const peak = useMemo(() => peakId ? PEAKS.find((p) => p.id === peakId) ?? null : null, [peakId]);
+  const open = !!peak;
 
   const originX = origin?.x ?? window.innerWidth / 2;
   const originY = origin?.y ?? window.innerHeight / 2;
 
-  // Check if this is the origin peak
-  const isOriginPeak = peak?.id === 'origin';
-  const isRightZoom = index >= 0 && index % 2 === 1;
+  // Memoize derived state
+  const peakState = useMemo(() => {
+    if (!peak) return { isRightZoom: false, isOriginPeak: false, isExperiencePeak: false };
+
+    const peakIds = PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end').map((n) => n.id);
+    const index = peakIds.indexOf(peak.id);
+
+    return {
+      isRightZoom: index >= 0 && index % 2 === 1,
+      isOriginPeak: peak.id === 'origin',
+      isExperiencePeak: peak.id === 'experience',
+    };
+  }, [peak]);
+
+  const { isRightZoom, isOriginPeak, isExperiencePeak } = peakState;
+
+  // Memoize styles to prevent recalculations
+  const containerStyle = useMemo(() => ({
+    transformOrigin: `${originX}px ${originY}px`,
+    background: isExperiencePeak
+      ? 'linear-gradient(to bottom, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)'
+      : isRightZoom
+        ? 'linear-gradient(to left, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)'
+        : 'linear-gradient(to right, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)',
+  }), [originX, originY, isExperiencePeak, isRightZoom]);
+
+  // Memoize classNames to avoid string concatenation on each render
+  const containerClassName = useMemo(() => {
+    if (isExperiencePeak) {
+      return 'fixed inset-0 z-[1000] flex flex-col items-center justify-center';
+    }
+    return `fixed inset-0 z-[1000] flex flex-col ${isRightZoom ? 'md:flex-row-reverse' : 'md:flex-row'}`;
+  }, [isExperiencePeak, isRightZoom]);
+
+  const contentContainerClassName = useMemo(() => {
+    const base = 'pointer-events-auto flex w-full flex-1 items-start p-6 md:p-10';
+    const scroll = isOriginPeak ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden';
+    const align = isExperiencePeak ? 'justify-center items-center h-full' : 'justify-center';
+    return `${base} ${align} ${scroll}`;
+  }, [isOriginPeak, isExperiencePeak]);
+
+  const contentDivClassName = useMemo(() => {
+    const base = 'w-full py-6';
+    const width = isExperiencePeak ? 'max-w-[900px] mx-auto mt-20' : 'max-w-[1100px]';
+    return `${base} ${width}`;
+  }, [isExperiencePeak]);
+
+  // Memoize back button props
+  const backButtonArrow = useMemo(() => {
+    if (isExperiencePeak) return '←';
+    return isRightZoom ? '→' : '←';
+  }, [isExperiencePeak, isRightZoom]);
+
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // Early return if no peak
+  if (!open || !peak) return null;
 
   return (
     <AnimatePresence>
-      {open && peak && (
-        <motion.div
-          key={peak.id}
-          className={`fixed inset-0 z-[1000] flex flex-col ${
-            isRightZoom ? 'md:flex-row-reverse' : 'md:flex-row'
-          }`}
-          style={{
-            transformOrigin: `${originX}px ${originY}px`,
-            // Only a soft edge vignette — center stays fully transparent
-            // so the zoomed mountain is always visible behind the content.
-            background: isRightZoom
-              ? 'linear-gradient(to left, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)'
-              : 'linear-gradient(to right, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)',
-          }}
-          initial={{ opacity: 0, scale: 0.035 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.035 }}
-          transition={{ type: 'spring', stiffness: 165, damping: 24, mass: 0.95 }}
+      <motion.div
+        key={peak.id}
+        className={containerClassName}
+        style={containerStyle}
+        initial={{ opacity: 0, scale: 0.035 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.035 }}
+        transition={{
+          type: 'spring',
+          stiffness: 165,
+          damping: 24,
+          mass: 0.95,
+          // Reduce animation complexity for better performance
+          velocity: 0.5,
+        }}
+      >
+        {/* Back button for Experience peak */}
+        {isExperiencePeak && (
+          <div className="absolute top-8 left-8 z-10">
+            <BackButton onClick={handleClose} arrow="←" textShadow={textShadow} />
+          </div>
+        )}
+
+        {/* Back button for other peaks */}
+        {!isExperiencePeak && (
+          <div
+            data-lenis-prevent
+            style={{ overscrollBehavior: 'contain' }}
+            className={`pointer-events-auto flex w-full flex-1 items-start ${isRightZoom ? 'justify-end' : 'justify-start'
+              } ${isOriginPeak ? 'overflow-visible' : 'overflow-y-auto'} md:h-full md:p-10`}
+          >
+            <BackButton onClick={handleClose} arrow={backButtonArrow} textShadow={textShadow} />
+          </div>
+        )}
+
+        {/* Skills peak content - displayed separately */}
+        {peak.content.type === 'skills' && (
+          <SkillPeakDislay />
+        )}
+
+        {/* Content area */}
+        <div
+          data-lenis-prevent
+          style={{ overscrollBehavior: 'contain' }}
+          className={contentContainerClassName}
         >
-          {/* ── Shows back button ── */}
-          <div
-            data-lenis-prevent
-            style={{ overscrollBehavior: 'contain' }}
-            className={`pointer-events-auto flex w-full flex-1 items-start ${
-              isRightZoom ? 'justify-end' : 'justify-start'
-            } ${
-              isOriginPeak ? 'overflow-visible' : 'overflow-y-auto'
-            } md:h-full md:p-10`}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Back to the journey"
-              className="flex w-fit items-center gap-2 rounded-full border border-[rgba(255,210,122,0.4)] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#fff0c7] backdrop-blur-sm transition hover:border-[#ffd27a] hover:bg-[rgba(255,210,122,0.12)]"
-              style={{ textShadow }}
-            >
-              <span className="text-base leading-none">{isRightZoom ? '→' : '←'}</span>
-              Back
-            </button>
+          <div className={contentDivClassName} style={{ textShadow }}>
+            <PeakContent peak={peak} />
           </div>
-
-          {/* Skills peak content - displayed separately */}
-          {peak.content.type === 'skills' && (
-            <SkillPeakDislay />
-          )}
-
-          {/* ── Right — content area ── */}
-          <div
-            data-lenis-prevent
-            style={{ overscrollBehavior: 'contain' }}
-            className={`pointer-events-auto flex w-full flex-1 items-start justify-center ${
-              isOriginPeak ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden'
-            } p-6 md:h-full md:p-10`}
-          >
-            <div className="w-full max-w-[1100px] py-6" style={{ textShadow }}>
-              <PeakContent peak={peak} />
-            </div>
-          </div>
-        </motion.div>
-      )}
+        </div>
+      </motion.div>
     </AnimatePresence>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Content renderer — same data/shape, now floating
-   free (no card) on the full-width right side.
-───────────────────────────────────────────── */
-
-function PeakContent({ peak }: { peak: Peak }) {
-  const { content } = peak;
-
-  if (content.type === 'origin') {
-    return (
-      <OriginPeakDisplay 
-        title={content.title}
-        tagline={content.tagline}
-        bio={content.bio}
-      />
-    );
-  }
-
-  if (content.type === 'skills') {
-    return (
-      <div className=''>
-        <SkillsPeak skills={content.skills} />
-      </div>
-    );
-  }
-
-  if (content.type === 'experience') {
-    return (
-      <div className="flex flex-col gap-5">
-        {content.roles.map((role) => (
-          <div key={role.company} className="max-w-[720px]">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xl font-bold text-[#ffd27a]">{role.company}</span>
-              <span className="rounded-full border border-[rgba(255,210,122,0.4)] px-3 py-1 text-xs text-[#f6d4a0]">
-                {role.duration}
-              </span>
-            </div>
-            <ul className="flex list-none flex-col gap-3 p-0">
-              {role.highlights.map((h) => (
-                <li key={h} className="flex items-start gap-3 text-base leading-7 text-[#fff8ee] opacity-95">
-                  <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ffd27a]" />
-                  {h}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (content.type === 'projects') {
-    return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {content.projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
-    );
-  }
-
-  if (content.type === 'impact') {
-    return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {content.achievements.map((a) => (
-          <div key={a.title} className="flex items-start gap-4">
-            <div className="text-3xl">{a.icon}</div>
-            <div>
-              <h4 className="mb-1 text-base font-bold text-[#fff8ee]">{a.title}</h4>
-              <p className="text-sm leading-6 text-[#f6d4a0]">{a.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (content.type === 'resume') {
-    return (
-      <div className="text-center">
-        <p className="mb-8 text-base leading-7 text-[#f6d4a0]">
-          Take a closer look at my full background.
-        </p>
-        <div className="mx-auto flex max-w-[320px] flex-col gap-3">
-          {content.links.map((link) => (
-            <a
-              key={link.label}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2.5 rounded-xl border border-[rgba(255,210,122,0.4)] px-6 py-4 text-sm font-bold text-[#ffd27a] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.14)]"
-            >
-              <span>{link.icon}</span>
-              <span>{link.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (content.type === 'contact') {
-    return (
-      <div className="mx-auto max-w-[520px] text-center">
-        <p className="mb-8 text-lg italic leading-8 text-[#f6d4a0]">{content.message}</p>
-        <div className="flex flex-col gap-3">
-          <a
-            href={`mailto:${content.email}`}
-            className="rounded-xl border border-[rgba(255,210,122,0.5)] px-6 py-4 text-sm font-bold text-[#ffd27a] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.14)]"
-          >
-            ✉️ &nbsp; Send an Email
-          </a>
-          <a
-            href={content.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-xl border border-[rgba(255,210,122,0.4)] px-6 py-4 text-sm font-bold text-[#fff8ee] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.1)]"
-          >
-            💼 &nbsp; Connect on LinkedIn
-          </a>
-          <a
-            href={content.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-xl border border-[rgba(255,210,122,0.4)] px-6 py-4 text-sm font-bold text-[#fff8ee] no-underline backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[rgba(255,210,122,0.1)]"
-          >
-            🐙 &nbsp; View GitHub
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function ProjectCard({ project }: { project: Project }) {
-  return (
-    <details className="rounded-xl border border-[rgba(255,210,122,0.3)] px-4 backdrop-blur-sm">
-      <summary className="flex cursor-pointer list-none items-center justify-between py-3.5 [&::-webkit-details-marker]:hidden">
-        <span className="text-sm font-bold text-[#fff8ee]">{project.title}</span>
-        <span className="text-lg text-[#ffd27a]">›</span>
-      </summary>
-
-      <div className="flex flex-col gap-3 border-t border-[rgba(255,210,122,0.2)] py-3.5">
-        <Section label="Problem"><p>{project.problem}</p></Section>
-        <Section label="My Role"><p>{project.role}</p></Section>
-        <Section label="Tech">
-          <div className="flex flex-wrap gap-1.5">
-            {project.tech.map((t) => (
-              <span
-                key={t}
-                className="rounded-md border border-[rgba(255,210,122,0.4)] px-2 py-0.5 text-xs font-semibold text-[#ffd27a]"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </Section>
-        <Section label="Features">
-          <ul className="flex list-none flex-col gap-1 p-0">
-            {project.features.map((f) => (
-              <li key={f} className="relative pl-4 text-xs leading-5 text-[#fff8ee] opacity-90 before:absolute before:left-0 before:text-[#ffd27a] before:content-['›']">
-                {f}
-              </li>
-            ))}
-          </ul>
-        </Section>
-        <Section label="Impact"><p className="font-semibold text-[#fff0c5]">{project.impact}</p></Section>
-      </div>
-    </details>
-  );
-}
-
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1 text-xs leading-6 text-[#fff8ee] opacity-90">
-      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#ffd27a]">{label}</span>
-      {children}
-    </div>
   );
 }

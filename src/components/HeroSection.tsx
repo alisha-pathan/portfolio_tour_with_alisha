@@ -12,20 +12,29 @@
  * accepts clicks while the hero is actually visible (before hasScrolled).
  */
 
+import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 
 interface HeroSectionProps {
   onBeginAscent: () => void;
+  onReturnToOrigin: () => void;
   hasScrolled: boolean;
 }
 
-export function HeroSection({ onBeginAscent, hasScrolled }: HeroSectionProps) {
+export function HeroSection({ onBeginAscent, onReturnToOrigin, hasScrolled }: HeroSectionProps) {
   const { scrollYProgress } = useScroll();
+  const [isAtEnd, setIsAtEnd] = useState(false);
+
+  useEffect(() => {
+    return scrollYProgress.on('change', (value) => {
+      setIsAtEnd(value > 0.95);
+    });
+  }, [scrollYProgress]);
 
   // Smooth spring-driven values — NO 3D, just opacity + translateY
-  const rawOpacity = useTransform(scrollYProgress, [0, 0.10], [1, 0]);
-  const rawY       = useTransform(scrollYProgress, [0, 0.10], [0, -60]);
-  const rawScale   = useTransform(scrollYProgress, [0, 0.10], [1, 0.94]);
+  const rawOpacity = useTransform(scrollYProgress, [0, 0.03, 0.96, 1], [1, 0, 0, 1]);
+  const rawY       = useTransform(scrollYProgress, [0, 0.03, 0.96, 1], [0, -60, 60, 0]);
+  const rawScale   = useTransform(scrollYProgress, [0, 0.03, 0.96, 1], [1, 0.94, 0.94, 1]);
 
   const heroOpacity = useSpring(rawOpacity, { stiffness: 80, damping: 22 });
   const heroY       = useSpring(rawY,       { stiffness: 80, damping: 22 });
@@ -101,13 +110,15 @@ export function HeroSection({ onBeginAscent, hasScrolled }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.52, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
         >
-          Scroll to send the eagle soaring through my engineering story.
+          {isAtEnd
+            ? "You've reached the summit of my story."
+            : "Scroll to send the eagle soaring through my engineering story."}
         </motion.p>
 
         {/* ── CTA Buttons ───────────────────────── */}
         <motion.div
           className={`flex flex-wrap justify-center gap-3.5 ${
-            hasScrolled ? 'pointer-events-none' : 'pointer-events-auto'
+            (hasScrolled && !isAtEnd) ? 'pointer-events-none' : 'pointer-events-auto'
           }`}
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -116,8 +127,8 @@ export function HeroSection({ onBeginAscent, hasScrolled }: HeroSectionProps) {
           <button
             id="begin-ascent-btn"
             type="button"
-            onClick={onBeginAscent}
-            aria-label="Begin the ascent — scroll through portfolio"
+            onClick={isAtEnd ? onReturnToOrigin : onBeginAscent}
+            aria-label={isAtEnd ? "Return to the beginning" : "Begin the ascent — scroll through portfolio"}
             style={{
               background: 'linear-gradient(135deg, #ffd27a 0%, #ff8a2a 100%)',
               color: '#2a0902',
@@ -139,7 +150,7 @@ export function HeroSection({ onBeginAscent, hasScrolled }: HeroSectionProps) {
               (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 22px rgba(255,140,42,0.45), 0 2px 8px rgba(26,8,2,0.3)';
             }}
           >
-            Begin the Ascent ↓
+            {isAtEnd ? '↑ Return to Origin' : 'Begin the Ascent ↓'}
           </button>
 
           <a
