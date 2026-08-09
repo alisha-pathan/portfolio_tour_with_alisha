@@ -10,6 +10,8 @@
  * 
  * v12: Experience peak is now centered while all other peaks maintain
  * alternating left/right layout - OPTIMIZED VERSION
+ * v13: Converted inline styles to Tailwind classes
+ * v14: Experience peak takes full width, flexible system for future peaks
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -33,24 +35,24 @@ interface PeakDetailOverlayProps {
   onClose: () => void;
 }
 
+// Define which peaks should be centered (full width)
+// Add more peak IDs here in the future if needed
+const CENTERED_PEAKS = new Set(['experience']);
+
 // Shared, heavy drop-shadow so text stays legible over any part of the
 // zoomed mountain/sky, without needing a solid card behind it.
-const textShadow = '0 2px 4px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.6)';
+const textShadow = 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]';
 
 // Memoized Back Button component to prevent unnecessary re-renders
-const BackButton = memo(({ onClick, arrow, textShadow }: {
+const BackButton = memo(({ onClick }: {
   onClick: () => void;
-  arrow: string;
-  textShadow: string;
 }) => (
   <button
     type="button"
     onClick={onClick}
     aria-label="Back to the journey"
-    className="flex w-fit items-center gap-2 rounded-full border border-[rgba(255,210,122,0.4)] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#fff0c7] backdrop-blur-sm transition hover:border-[#ffd27a] hover:bg-[rgba(255,210,122,0.12)]"
-    style={{ textShadow }}
+    className="flex w-fit items-center gap-2 rounded-full border border-[rgba(255,210,122,0.4)] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#fff0c7] backdrop-blur-sm transition hover:border-[#ffd27a] hover:bg-[rgba(255,210,122,0.12)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
   >
-    <span className="text-base leading-none">{arrow}</span>
     Back
   </button>
 ));
@@ -237,7 +239,7 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
 
   // Memoize derived state
   const peakState = useMemo(() => {
-    if (!peak) return { isRightZoom: false, isOriginPeak: false, isExperiencePeak: false };
+    if (!peak) return { isRightZoom: false, isOriginPeak: false, isCentered: false };
 
     const peakIds = PATH_NODES.filter((n) => n.id !== 'start' && n.id !== 'end').map((n) => n.id);
     const index = peakIds.indexOf(peak.id);
@@ -245,48 +247,51 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
     return {
       isRightZoom: index >= 0 && index % 2 === 1,
       isOriginPeak: peak.id === 'origin',
-      isExperiencePeak: peak.id === 'experience',
+      isCentered: CENTERED_PEAKS.has(peak.id), // Check if this peak should be centered
     };
   }, [peak]);
 
-  const { isRightZoom, isOriginPeak, isExperiencePeak } = peakState;
+  const { isRightZoom, isOriginPeak, isCentered } = peakState;
 
   // Memoize styles to prevent recalculations
-  const containerStyle = useMemo(() => ({
-    transformOrigin: `${originX}px ${originY}px`,
-    background: isExperiencePeak
-      ? 'linear-gradient(to bottom, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)'
-      : isRightZoom
-        ? 'linear-gradient(to left, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)'
-        : 'linear-gradient(to right, rgba(20,6,2,0.4) 0%, transparent 30%, transparent 100%)',
-  }), [originX, originY, isExperiencePeak, isRightZoom]);
+  const containerBackground = useMemo(() => {
+    if (isCentered) {
+      return 'bg-gradient-to-b from-[rgba(20,6,2,0.4)] via-transparent via-30% to-transparent';
+    }
+    if (isRightZoom) {
+      return 'bg-gradient-to-l from-[rgba(20,6,2,0.4)] via-transparent via-30% to-transparent';
+    }
+    return 'bg-gradient-to-r from-[rgba(20,6,2,0.4)] via-transparent via-30% to-transparent';
+  }, [isCentered, isRightZoom]);
 
   // Memoize classNames to avoid string concatenation on each render
   const containerClassName = useMemo(() => {
-    if (isExperiencePeak) {
-      return 'fixed inset-0 z-[1000] flex flex-col items-center justify-center';
+    if (isCentered) {
+      return `fixed inset-0 z-[1000] flex flex-col items-center justify-center ${containerBackground}`;
     }
-    return `fixed inset-0 z-[1000] flex flex-col ${isRightZoom ? 'md:flex-row-reverse' : 'md:flex-row'}`;
-  }, [isExperiencePeak, isRightZoom]);
+    return `fixed inset-0 z-[1000] flex flex-col ${isRightZoom ? 'md:flex-row-reverse' : 'md:flex-row'} ${containerBackground}`;
+  }, [isCentered, isRightZoom, containerBackground]);
 
   const contentContainerClassName = useMemo(() => {
     const base = 'pointer-events-auto flex w-full flex-1 items-start p-6 md:p-10';
     const scroll = isOriginPeak ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden';
-    const align = isExperiencePeak ? 'justify-center items-center h-full' : 'justify-center';
+    const align = isCentered ? 'justify-center items-center h-full' : 'justify-center';
     return `${base} ${align} ${scroll}`;
-  }, [isOriginPeak, isExperiencePeak]);
+  }, [isOriginPeak, isCentered]);
 
+  // For centered peaks: full width with some padding
+  // For non-centered peaks: max width constraint
   const contentDivClassName = useMemo(() => {
     const base = 'w-full py-6';
-    const width = isExperiencePeak ? 'max-w-[900px] mx-auto mt-20' : 'max-w-[1100px]';
-    return `${base} ${width}`;
-  }, [isExperiencePeak]);
-
-  // Memoize back button props
-  const backButtonArrow = useMemo(() => {
-    if (isExperiencePeak) return '←';
-    return isRightZoom ? '→' : '←';
-  }, [isExperiencePeak, isRightZoom]);
+    const shadow = 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]';
+    
+    if (isCentered) {
+      // Full width with padding for breathing room
+      return `${base} px-8 mt-20 ${shadow}`;
+    }
+    // Standard width for non-centered peaks
+    return `${base} max-w-[1100px] ${shadow}`;
+  }, [isCentered]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -300,7 +305,7 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
       <motion.div
         key={peak.id}
         className={containerClassName}
-        style={containerStyle}
+        style={{ transformOrigin: `${originX}px ${originY}px` }}
         initial={{ opacity: 0, scale: 0.035 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.035 }}
@@ -309,26 +314,24 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
           stiffness: 165,
           damping: 24,
           mass: 0.95,
-          // Reduce animation complexity for better performance
           velocity: 0.5,
         }}
       >
-        {/* Back button for Experience peak */}
-        {isExperiencePeak && (
+        {/* Back button for centered peaks */}
+        {isCentered && (
           <div className="absolute top-8 left-8 z-10">
-            <BackButton onClick={handleClose} arrow="←" textShadow={textShadow} />
+            <BackButton onClick={handleClose} />
           </div>
         )}
 
-        {/* Back button for other peaks */}
-        {!isExperiencePeak && (
+        {/* Back button for non-centered peaks */}
+        {!isCentered && (
           <div
             data-lenis-prevent
-            style={{ overscrollBehavior: 'contain' }}
             className={`pointer-events-auto flex w-full flex-1 items-start ${isRightZoom ? 'justify-end' : 'justify-start'
               } ${isOriginPeak ? 'overflow-visible' : 'overflow-y-auto'} md:h-full md:p-10`}
           >
-            <BackButton onClick={handleClose} arrow={backButtonArrow} textShadow={textShadow} />
+            <BackButton onClick={handleClose} />
           </div>
         )}
 
@@ -340,10 +343,9 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
         {/* Content area */}
         <div
           data-lenis-prevent
-          style={{ overscrollBehavior: 'contain' }}
           className={contentContainerClassName}
         >
-          <div className={contentDivClassName} style={{ textShadow }}>
+          <div className={contentDivClassName}>
             <PeakContent peak={peak} />
           </div>
         </div>
