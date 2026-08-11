@@ -17,7 +17,7 @@ interface ExperiencePeakDisplayProps {
 
 const ExperiencePeakDisplay: React.FC<ExperiencePeakDisplayProps> = ({ roles }) => {
     return (
-        <div className="relative w-full">
+        <div className="relative w-full -top-16">
             {/* Experience Banner Background - now contained with content */}
             <div className="relative flex items-center justify-center min-h-[700px] w-full">
                 {/* Banner Image - with sharpening filters */}
@@ -26,7 +26,7 @@ const ExperiencePeakDisplay: React.FC<ExperiencePeakDisplayProps> = ({ roles }) 
                         src={experince_banner}
                         alt=""
                         className="h-full w-[2000px] object-cover"
-                        style={{ 
+                        style={{
                             filter: 'contrast(1.05) brightness(1.02) saturate(1.05)',
                             imageRendering: 'auto'
                         }}
