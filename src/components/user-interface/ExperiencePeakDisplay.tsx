@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import circle_skull from '../../assets/my_assets/circle_skull.png';
-import experince_banner from '../../assets/my_assets/experience_banner.png';
+import experince_banner from '../../assets/my_assets/experience_banner_svg.svg';
 
 interface ExperienceRole {
     company: string;
