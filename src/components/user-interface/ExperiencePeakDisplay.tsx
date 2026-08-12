@@ -15,7 +15,7 @@ interface ExperiencePeakDisplayProps {
     roles: ExperienceRole[];
 }
 
-const ExperiencePeakDisplay: React.FC<ExperiencePeakDisplayProps> = ({ roles }) => {
+function ExperiencePeakDisplay({ roles }: ExperiencePeakDisplayProps) {
     return (
         <div className="relative w-full -top-16">
             {/* Experience Banner Background - now contained with content */}
@@ -33,6 +33,8 @@ const ExperiencePeakDisplay: React.FC<ExperiencePeakDisplayProps> = ({ roles }) 
                         draggable={false}
                     />
                 </div>
+
+
 
                 {/* Animated Circle Skull Background */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
