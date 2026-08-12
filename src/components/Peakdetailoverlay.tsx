@@ -39,10 +39,6 @@ interface PeakDetailOverlayProps {
 // Add more peak IDs here in the future if needed
 const CENTERED_PEAKS = new Set(['experience']);
 
-// Shared, heavy drop-shadow so text stays legible over any part of the
-// zoomed mountain/sky, without needing a solid card behind it.
-const textShadow = 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]';
-
 // Memoized Back Button component to prevent unnecessary re-renders
 const BackButton = memo(({ onClick }: {
   onClick: () => void;
@@ -274,7 +270,7 @@ export function PeakDetailOverlay({ peakId, origin, onClose }: PeakDetailOverlay
 
   const contentContainerClassName = useMemo(() => {
     const base = 'pointer-events-auto flex w-full flex-1 items-start p-6 md:p-10';
-    const scroll = isOriginPeak ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden';
+    const scroll = isOriginPeak ? 'overflow-visible' : (isCentered ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden');
     const align = isCentered ? 'justify-center items-center h-full' : 'justify-center';
     return `${base} ${align} ${scroll}`;
   }, [isOriginPeak, isCentered]);
