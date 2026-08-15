@@ -38,7 +38,7 @@ interface PeakDetailOverlayProps {
 
 // Define which peaks should be centered (full width)
 // Add more peak IDs here in the future if needed
-const CENTERED_PEAKS = new Set(['experience']);
+const CENTERED_PEAKS = new Set(['experience', 'projects']);
 
 // Memoized Back Button component to prevent unnecessary re-renders
 const BackButton = memo(({ onClick }: {

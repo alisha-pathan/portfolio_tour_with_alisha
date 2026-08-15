@@ -4,16 +4,13 @@ export type Skill = {
   category: string;
 };
 
-export type Project = {
+export interface Project {
   id: string;
   title: string;
-  problem: string;
-  role: string;
+  scope: string;
+  description: string;
   tech: string[];
-  features: string[];
-  impact: string;
-};
-
+}
 export type PeakContent =
   | { type: 'origin'; bio: string; title: string; tagline: string }
   | { type: 'skills'; skills: Skill[] }
@@ -113,8 +110,8 @@ export const PEAKS: Peak[] = [
   },
   {
     id: 'projects',
-    label: 'Projects Peak',
-    subtitle: 'Case Studies',
+    label: 'The Conquered Peaks',
+    subtitle: 'Six Expeditions Across Production Systems',
     xPercent: 68,
     eagleX: 72,
     eagleY: 30,
@@ -124,94 +121,50 @@ export const PEAKS: Peak[] = [
         {
           id: 'ai-recruitment',
           title: 'AI Recruitment Automation Platform',
-          problem:
-            'Recruiters needed a streamlined, AI-driven way to move candidates through the hiring pipeline, with both a candidate-facing experience and an internal admin view.',
-          role: 'Built both the candidate-facing and admin-facing interfaces as part of the frontend team.',
+          scope: 'Team Project',
+          description:
+            "Owned frontend development on an AI-driven recruitment platform end-to-end — both the candidate-facing experience and the internal admin console. Architected the frontend to render streamed LLM responses in real time, including live chunked reasoning output, one of the earliest surfaces on the team to handle streaming model output on the client side. Built 7+ schema-driven modules using React Hook Form and Zod for airtight validation, with shadcn/ui powering a consistent, accessible design system throughout. Standardized API request handling across the platform, cutting down inconsistency and easing long-term maintenance.",
           tech: ['React', 'TypeScript', 'React Hook Form', 'Zod', 'shadcn/ui'],
-          features: [
-            'Handled streamed LLM responses on the frontend, including chunked reasoning output, for a real-time AI-assisted flow',
-            'Dynamic, schema-driven forms across 7+ modules built with React Hook Form and Zod',
-            'shadcn/ui components used throughout for a consistent, accessible design system',
-            'Standardized API request handling across the application for reliability',
-          ],
-          impact:
-            'Powered a real-time, AI-assisted recruitment journey end to end — one of the first frontend surfaces on the team to handle live streamed model output.',
-        },
-        {
-          id: 'ai-chatbot',
-          title: 'AI Assistant & Chatbot Platform',
-          problem:
-            'The product needed a chatbot experience capable of handling streamed responses smoothly, plus a way to generate diagrams from conversation content.',
-          role: 'Developed and maintained the chatbot feature and reusable common components across 3+ design iterations.',
-          tech: ['React (JSX)', 'Redux Toolkit', 'Mermaid', 'Axios'],
-          features: [
-            'Streamed response handling for a responsive, real-time chat feel',
-            'Mermaid-based diagram generation feature',
-            'Implemented authentication, including automatic access-token refresh',
-            'Centralized token and error handling across the application via Axios interceptors',
-          ],
-          impact:
-            'Resolved critical bugs in the authentication flow and shipped through 3+ iterations as the product design evolved.',
-        },
-        {
-          id: 'agreements-erp',
-          title: 'Enterprise Agreements ERP Platform',
-          problem:
-            'The business needed ERP-style master and transaction data flows implemented directly from SRS/documentation specifications, with several requirement ambiguities to resolve along the way.',
-          role: 'Implemented data flows and coordinated directly with the tech lead to resolve requirement ambiguities.',
-          tech: ['React (TSX)', 'React Query', 'Ant Design'],
-          features: [
-            'Managed client lifecycle functionality: agreement records, master billing, templates and rate structures',
-            'Designed dynamic templates to support configurable enterprise workflows',
-            'Data-heavy agreement screens with tables, filters, forms, validations and conditional workflows',
-            'Streamlined request handling to keep API logic consistent across modules',
-          ],
-          impact:
-            'Delivered a configurable workflow system that kept API and UI logic consistent across multiple enterprise modules.',
         },
         {
           id: 'employee-hierarchy',
           title: 'Employee Hierarchy & Directory Platform',
-          problem:
-            'HR had no live, navigable view of the company-wide reporting structure, and needed a way to search, filter and export it securely.',
-          role: 'Sole frontend developer — matched Figma specifications precisely with live data syncing.',
+          scope: 'Sole Frontend Owner',
+          description:
+            "Sole frontend developer on a company-wide employee hierarchy tool built for HR — owned the entire frontend from Figma handoff to production, matching design specs pixel-for-pixel with live data syncing. Engineered a multi-filter search system and role-based access control so HR could securely navigate and manage sensitive org data. Shipped export functionality across standard, tree-structured, and Excel formats. The module performed well enough to be adopted company-wide, later integrated directly into the broader ERP platform — built once, reused everywhere.",
           tech: ['React', 'TypeScript'],
-          features: [
-            'Multi-filter search system for navigating employee data',
-            'Role-based access control for secure HR management',
-            'File export supporting standard, tree-structured and Excel formats',
-          ],
-          impact:
-            'Delivered a reusable module that was later integrated into the broader ERP platform — built once, adopted company-wide.',
+        },
+        {
+          id: 'ai-chatbot',
+          title: 'AI Assistant & Chatbot Platform',
+          scope: 'Team Project',
+          description:
+            "Built and maintained the chatbot experience for an AI assistant product across 3+ major design iterations, engineering smooth handling of streamed responses for a real-time conversational feel. Shipped a Mermaid-based diagram generation feature that turned conversation content directly into visual output. Implemented authentication end-to-end, including automatic access-token refresh, and resolved critical bugs in that flow that were blocking reliable sessions. Centralized token and error handling across the app through Axios interceptors, eliminating repeated auth logic.",
+          tech: ['React (JSX)', 'Redux Toolkit', 'Mermaid', 'Axios'],
+        },
+        {
+          id: 'agreements-erp',
+          title: 'Enterprise Agreements ERP Platform',
+          scope: 'Team Project',
+          description:
+            "Built core data flows for an enterprise ERP platform directly from SRS specifications, working in close coordination with the tech lead to resolve requirement ambiguities before they hit production. Owned client lifecycle functionality spanning agreement records, master billing, templates, and rate structures. Designed dynamic, configurable templates to support enterprise-scale workflows, and streamlined request handling to keep API logic consistent across a growing number of modules. Delivered data-dense agreement screens — tables, filters, forms, validation, conditional logic — using React Query and Ant Design.",
+          tech: ['React (TSX)', 'React Query', 'Ant Design'],
         },
         {
           id: 'asset-management',
           title: 'Asset Management System (AMS)',
-          problem:
-            'Internal asset tracking needed secure, role-gated access as the system grew to support more workflows.',
-          role: 'Owned the authentication and role-based authorization module.',
+          scope: 'Module Owner',
+          description:
+            "Owned the authentication and role-based authorization module for an internal asset management system, engineering login flows and permission-gated access across 4+ distinct user roles. Extended the platform with additional frontend modules to support internal asset-tracking workflows as the system scaled, using Redux and Tailwind CSS.",
           tech: ['React (TSX)', 'Redux', 'Tailwind CSS'],
-          features: [
-            'Login flows and permission-based access control across 4+ user roles',
-            'Extended the system with additional frontend modules for asset tracking',
-          ],
-          impact:
-            'Established the access-control foundation the rest of the AMS frontend was built on.',
         },
         {
           id: 'id-card-system',
           title: 'Employee ID Card & Print Management System',
-          problem:
-            'HR needed an in-app way to generate, print and manage employee ID cards without relying on external tools.',
-          role: 'Engineered dynamic card templates and the printer-integrated system.',
+          scope: 'Team Project',
+          description:
+            "Engineered a dynamic, template-driven card generation system with in-app printer integration, giving HR self-serve control over employee ID card creation without relying on external tools. Built the frontend using React (TSX), Redux, Axios, and Chart.js, covering both card generation and full record maintenance.",
           tech: ['React (TSX)', 'Redux', 'Axios', 'Chart.js'],
-          features: [
-            'Dynamic, templated card generation',
-            'In-app printing integration',
-            'Record maintenance and data updates',
-          ],
-          impact:
-            'Gave HR direct, self-serve control over card generation and record updates.',
         },
       ],
     },
