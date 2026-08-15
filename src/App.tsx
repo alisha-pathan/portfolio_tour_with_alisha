@@ -111,7 +111,7 @@ function App() {
         zoomPeakId={selectedPeakId}
       />
 
-      <EagleOverlay hasScrolled={hasScrolled} />
+   {!selectedPeakId && <EagleOverlay hasScrolled={hasScrolled} />}
 
       {/* NEW: pointer-events-none — this was the actual bug. See header comment. */}
       <main id="main-content" className="pointer-events-none relative z-10 h-[900vh]">
