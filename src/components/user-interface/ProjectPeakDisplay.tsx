@@ -377,8 +377,8 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
               animate="center"
               exit="exit"
               style={{
-                width: '280px',
-                height: '320px',
+                width: '220px',
+                height: '260px',
                 position: 'absolute',
                 transformStyle: 'preserve-3d',
                 zIndex: 10,
@@ -466,7 +466,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       </div>
 
       {/* ===== BOTTOM: NAV CLUSTER — arrows + crystal navbar together ===== */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6">
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6">
         {/* <button
           onClick={handlePrev}
           disabled={isAnimating}
@@ -493,7 +493,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
               disabled={isAnimating}
             >
               <div
-                className={`rounded-full overflow-hidden transition-all duration-500 ${index === activeIndex % crystals.length
+                className={`rounded-full overflow-hidden transition-all duration-500 flex items-center justify-center ${index === activeIndex % crystals.length
                   ? 'ring-2 ring-white/80 shadow-[0_0_30px_rgba(255,255,255,0.6)] scale-110'
                   : 'opacity-40 hover:opacity-80'
                   }`}
@@ -509,7 +509,8 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
                 <img
                   src={crystal.image}
                   alt="Crystal"
-                  className="w-full h-full object-contain"
+                  className="object-contain"
+                  style={{ width: '50%', height: '50%' }}
                 />
               </div>
             </button>
