@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import type { Project } from '../../data/portfolioPeaks';
 import { PEAKS } from '../../data/portfolioPeaks';
 
-import crystel1 from '../../assets/my_assets/golden_crystel.png';
-import crystel2 from '../../assets/my_assets/blue_crystel.png';
-import crystel3 from '../../assets/my_assets/white_crystel.png';
-import crystel4 from '../../assets/my_assets/dark_crystel.png';
-import crystel5 from '../../assets/my_assets/red_crystel.png';
-import crystel6 from '../../assets/my_assets/green_crystel.png';
+import crystel1 from '../../assets/my_assets/golden_crystel.svg';
+import crystel2 from '../../assets/my_assets/blue_crystel.svg';
+import crystel3 from '../../assets/my_assets/white_crystel.svg';
+import crystel4 from '../../assets/my_assets/dark_crystel.svg';
+import crystel5 from '../../assets/my_assets/red_crystel.svg';
+import crystel6 from '../../assets/my_assets/green_crystel.svg';
 
 // ============================================
 // CRYSTAL DATA - ALL 6 CRYSTALS
@@ -54,17 +54,15 @@ const getRandomCorner = () => {
 
 const splitIntoTwoSides = (text: string): [string, string] => {
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  
-  // If there's only 1 sentence, put it on the left
+
   if (sentences.length === 1) {
     return [text, ''];
   }
-  
-  // Split roughly in half
+
   const half = Math.floor(sentences.length / 2);
   const left = sentences.slice(0, half).join(' ');
   const right = sentences.slice(half).join(' ');
-  
+
   return [left, right];
 };
 
@@ -81,8 +79,7 @@ const FloatingChunk = React.memo(({ text, delay, align }: { text: string; delay:
     className="max-w-[280px] text-sm leading-relaxed"
     style={{
       fontFamily: "'Segoe UI', system-ui, sans-serif",
-      color: '#1a1a2e',
-      textShadow: '0 2px 8px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.5)',
+      color: 'white',
       letterSpacing: '0.02em',
       fontWeight: 500,
       textAlign: align || 'left',
@@ -93,6 +90,37 @@ const FloatingChunk = React.memo(({ text, delay, align }: { text: string; delay:
 ));
 
 FloatingChunk.displayName = 'FloatingChunk';
+
+// ============================================
+// DUST MOTE (ambient depth layer, sits behind the crystal)
+// ============================================
+
+const DustMote = React.memo(({ x, delay, duration, size, colorHex }: { x: number; delay: number; duration: number; size: number; colorHex: string }) => (
+  <motion.div
+    className="absolute rounded-full pointer-events-none"
+    style={{
+      left: `${x}%`,
+      bottom: '10%',
+      width: size,
+      height: size,
+      background: colorHex,
+      filter: 'blur(1.5px)',
+    }}
+    animate={{
+      y: [0, -140, -260],
+      opacity: [0, 0.55, 0],
+      x: [0, x % 2 === 0 ? 20 : -20, 0],
+    }}
+    transition={{
+      duration,
+      delay,
+      repeat: Infinity,
+      ease: 'easeInOut',
+    }}
+  />
+));
+
+DustMote.displayName = 'DustMote';
 
 // ============================================
 // MAIN COMPONENT
@@ -110,6 +138,23 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
   const [isAnimating, setIsAnimating] = useState(false);
   const [entryCorner, setEntryCorner] = useState(getRandomCorner());
   const [exitCorner, setExitCorner] = useState(getOppositeCorner(entryCorner));
+
+  // ===== 🟢 TILT (mouse-parallax) MOTION VALUES =====
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+
+  const handleCrystalMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    tiltY.set(px * 22);
+    tiltX.set(-py * 22);
+  };
+
+  const resetTilt = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
 
   const changeCrystal = (newIndex: number) => {
     if (isAnimating || projectsData.length === 0) return;
@@ -151,7 +196,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       scale: 0.2,
       rotateX: 180,
       rotateZ: corner.rotate,
-      transition: { duration: 0.9, ease: [0.22, 1.1, 0.36, 1] },
+      transition: { duration: 0.9, ease: [0.22, 1.1, 0.36, 1] as const },
     }),
     center: {
       opacity: 1,
@@ -160,7 +205,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       scale: 1,
       rotateX: 0,
       rotateZ: 0,
-      transition: { duration: 0.9, ease: [0.22, 1.1, 0.36, 1] },
+      transition: { duration: 0.9, ease: [0.22, 1.1, 0.36, 1] as const },
     },
     exit: (corner: typeof corners[0]) => ({
       opacity: 0,
@@ -169,7 +214,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       scale: 0.2,
       rotateX: 180,
       rotateZ: corner.rotate,
-      transition: { duration: 0.8, ease: 'easeIn' },
+      transition: { duration: 0.8, ease: 'easeIn' as const },
     }),
   };
 
@@ -182,9 +227,9 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       scale: [1, 1.03, 1, 0.97, 1],
       transition: {
         duration: 6,
-        ease: 'easeInOut',
+        ease: "easeInOut" as const,
         repeat: Infinity,
-        repeatType: 'loop',
+        repeatType: "loop" as const,
       },
     },
   };
@@ -198,9 +243,9 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       y: [0, 5, 0, -5, 0],
       transition: {
         duration: 6,
-        ease: 'easeInOut',
+        ease: "easeInOut" as const,
         repeat: Infinity,
-        repeatType: 'loop',
+        repeatType: "loop" as const,
       },
     },
   };
@@ -212,9 +257,23 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
       opacity: [0.6, 0.1, 0.6],
       transition: {
         duration: 3,
-        ease: 'easeInOut',
+        ease: "easeInOut" as const,
         repeat: Infinity,
-        repeatType: 'loop',
+        repeatType: "loop" as const,
+      },
+    },
+  };
+
+  // ===== 🟢 SPECULAR HIGHLIGHT (glint riding the surface) =====
+  const glintVariants = {
+    animate: {
+      opacity: [0.3, 0.9, 0.3],
+      scale: [0.9, 1.1, 0.9],
+      transition: {
+        duration: 4,
+        ease: 'easeInOut' as const,
+        repeat: Infinity,
+        repeatType: 'loop' as const,
       },
     },
   };
@@ -233,11 +292,20 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
   // Split description into exactly 2 sides (Left & Right)
   const [leftChunk, rightChunk] = splitIntoTwoSides(currentProject.description);
 
+  // Dust motes: a handful of positions/timings, memoized-in-place since values are cheap
+  const dustMotes = [
+    { x: 42, delay: 0, duration: 7, size: 4 },
+    { x: 55, delay: 1.5, duration: 8.5, size: 3 },
+    { x: 47, delay: 3, duration: 6.5, size: 5 },
+    { x: 60, delay: 2, duration: 9, size: 3 },
+    { x: 38, delay: 4, duration: 7.5, size: 4 },
+  ];
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-transparent flex flex-col items-center justify-center">
 
       {/* ===== TOP: PROJECT TITLE (Only) ===== */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-20 text-center">
+      <div className="absolute top-1 left-1/2 -translate-x-1/2 z-20 text-center">
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,7 +313,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-3xl md:text-4xl font-semibold tracking-wide"
           style={{
-            color: '#1a1a2e',
+            color: 'white',
             textShadow: '0 3px 15px rgba(255,255,255,0.9), 0 0 30px rgba(255,255,255,0.5)',
             fontFamily: "'Inter', 'Segoe UI', sans-serif",
           }}
@@ -254,10 +322,19 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
         </motion.h2>
       </div>
 
-      {/* ===== CENTER: CRYSTAL WITH 3D SHADOW & AURA ===== */}
+      {/* ===== CENTER: CRYSTAL WITH 3D SHADOW, AURA & TILT ===== */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative flex h-[350px] w-[350px] items-center justify-center">
-          
+        <div
+          className="relative flex h-[350px] w-[350px] items-center justify-center pointer-events-auto"
+          style={{ perspective: 900 }}
+          onMouseMove={handleCrystalMouseMove}
+          onMouseLeave={resetTilt}
+        >
+          {/* 0. Ambient dust motes — behind everything, sells depth */}
+          {dustMotes.map((m, i) => (
+            <DustMote key={i} x={m.x} delay={m.delay} duration={m.duration} size={m.size} colorHex={`${currentCrystal.color}99`} />
+          ))}
+
           {/* 1. Outer Pulsing Aura */}
           <motion.div
             variants={auraVariants}
@@ -270,7 +347,7 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
             }}
           />
 
-          {/* 2. Dynamic 3D Ground Shadow */}
+          {/* 2a. Wide soft ambient shadow (existing) */}
           <motion.div
             variants={shadowVariants}
             animate="animate"
@@ -281,7 +358,16 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
             }}
           />
 
-          {/* 3. The Crystal Itself */}
+          {/* 2b. Tight dark contact shadow — grounds the object */}
+          <div
+            className="absolute bottom-[-14px] left-1/2 -translate-x-1/2 w-[90px] h-[14px] rounded-[50%] pointer-events-none"
+            style={{
+              background: 'rgba(0,0,0,0.35)',
+              filter: 'blur(6px)',
+            }}
+          />
+
+          {/* 3. The Crystal Itself, now with mouse-parallax tilt */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeIndex}
@@ -299,27 +385,70 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
               }}
             >
               <motion.div
-                variants={idleVariants}
-                animate="animate"
                 style={{
                   width: '100%',
                   height: '100%',
                   position: 'relative',
                   transformStyle: 'preserve-3d',
+                  rotateX: tiltX,
+                  rotateY: tiltY,
                 }}
               >
-                <img
-                  src={currentCrystal.image}
-                  alt="Crystal"
-                  className="h-full w-full object-contain"
+                <motion.div
+                  variants={idleVariants}
+                  animate="animate"
                   style={{
-                    filter: `
-                      drop-shadow(0 0 50px ${currentCrystal.color}60) 
-                      drop-shadow(0 0 100px ${currentCrystal.color}30)
-                    `,
-                    transform: 'perspective(1200px) rotateX(8deg)',
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    transformStyle: 'preserve-3d',
                   }}
-                />
+                >
+                  <img
+                    src={currentCrystal.image}
+                    alt="Crystal"
+                    className="h-full w-full object-contain"
+                    style={{
+                      filter: `
+                        drop-shadow(0 0 50px ${currentCrystal.color}60) 
+                        drop-shadow(0 0 100px ${currentCrystal.color}30)
+                      `,
+                      transform: 'perspective(1200px) rotateX(8deg)',
+                    }}
+                  />
+
+                  {/* Specular glint — reads as light hitting a facet */}
+                  <motion.div
+                    variants={glintVariants}
+                    animate="animate"
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                      top: '18%',
+                      left: '32%',
+                      width: '34px',
+                      height: '64px',
+                      background: 'rgba(255,255,255,0.9)',
+                      filter: 'blur(9px)',
+                      mixBlendMode: 'overlay',
+                      transform: 'rotate(-18deg)',
+                    }}
+                  />
+                  <motion.div
+                    variants={glintVariants}
+                    animate="animate"
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                      top: '46%',
+                      left: '55%',
+                      width: '18px',
+                      height: '30px',
+                      background: 'rgba(255,255,255,0.7)',
+                      filter: 'blur(6px)',
+                      mixBlendMode: 'overlay',
+                      transform: 'rotate(12deg)',
+                    }}
+                  />
+                </motion.div>
               </motion.div>
             </motion.div>
           </AnimatePresence>
@@ -336,43 +465,25 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
         <FloatingChunk text={rightChunk} delay={0.4} align="right" />
       </div>
 
-      {/* ===== LEFT / RIGHT ARROWS (Glass, no solid bg) ===== */}
-      <button
-        onClick={handlePrev}
-        disabled={isAnimating}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex h-14 w-14 items-center justify-center rounded-full transition-all hover:scale-110 disabled:opacity-50"
-        style={{
-          background: 'rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,0.3)',
-          boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#1a1a2e" className="h-7 w-7">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-        </svg>
-      </button>
+      {/* ===== BOTTOM: NAV CLUSTER — arrows + crystal navbar together ===== */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6">
+        {/* <button
+          onClick={handlePrev}
+          disabled={isAnimating}
+          className="flex h-11 w-11 items-center justify-center rounded-full transition-all hover:scale-110 disabled:opacity-50"
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#1a1a2e" className="h-6 w-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button> */}
 
-      <button
-        onClick={handleNext}
-        disabled={isAnimating}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex h-14 w-14 items-center justify-center rounded-full transition-all hover:scale-110 disabled:opacity-50"
-        style={{
-          background: 'rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,0.3)',
-          boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
-        }}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#1a1a2e" className="h-7 w-7">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
-      </button>
-
-      {/* ===== BOTTOM: CRYSTAL NAVBAR (NO BG, NO LABELS) ===== */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 transform z-30">
         <div className="flex items-center gap-5">
           {crystals.map((crystal, index) => (
             <button
@@ -382,11 +493,10 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
               disabled={isAnimating}
             >
               <div
-                className={`rounded-full overflow-hidden transition-all duration-500 ${
-                  index === activeIndex % crystals.length
-                    ? 'ring-2 ring-white/80 shadow-[0_0_30px_rgba(255,255,255,0.6)] scale-110'
-                    : 'opacity-40 hover:opacity-80'
-                }`}
+                className={`rounded-full overflow-hidden transition-all duration-500 ${index === activeIndex % crystals.length
+                  ? 'ring-2 ring-white/80 shadow-[0_0_30px_rgba(255,255,255,0.6)] scale-110'
+                  : 'opacity-40 hover:opacity-80'
+                  }`}
                 style={{
                   width: index === activeIndex % crystals.length ? '48px' : '36px',
                   height: index === activeIndex % crystals.length ? '48px' : '36px',
@@ -405,6 +515,23 @@ export function ProjectPeakDisplay({ projects: customProjects }: ProjectPeakDisp
             </button>
           ))}
         </div>
+
+        {/* <button
+          onClick={handleNext}
+          disabled={isAnimating}
+          className="flex h-11 w-11 items-center justify-center rounded-full transition-all hover:scale-110 disabled:opacity-50"
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#1a1a2e" className="h-6 w-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button> */}
       </div>
 
     </div>

@@ -1,3 +1,5 @@
+//src\data\portfolioPeaks.ts
+
 export type Skill = {
   name: string;
   level: number; // retained for type-compat with existing components; no longer rendered as dots — see PeakDetailOverlay skills block
